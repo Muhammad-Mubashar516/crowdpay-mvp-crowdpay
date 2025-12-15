@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/MockAuthContext";
+import { useCampaigns } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,17 +11,30 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { Store, Calendar, Shield, Loader2, Image as ImageIcon } from "lucide-react";
+import { Store, Calendar, Shield, Loader2, Image as ImageIcon, Copy, Bitcoin, Smartphone, QrCode, MapPin, Clock, Users } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { QRCodeSVG } from "qrcode.react";
+
+const categoryLabels: Record<string, { label: string; emoji: string }> = {
+  education: { label: "Education", emoji: "🎓" },
+  medical: { label: "Medical", emoji: "🏥" },
+  business: { label: "Business", emoji: "💼" },
+  community: { label: "Community", emoji: "🤝" },
+  emergency: { label: "Emergency", emoji: "🚨" },
+  creative: { label: "Creative", emoji: "🎨" },
+  sports: { label: "Sports", emoji: "⚽" },
+  charity: { label: "Charity", emoji: "❤️" },
+  other: { label: "Other", emoji: "📦" },
+};
 
 const CreateCampaign = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
+  const { addCampaign } = useCampaigns();
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>("");
   
   const [formData, setFormData] = useState({
@@ -33,18 +47,8 @@ const CreateCampaign = () => {
     theme_color: "#F7931A",
     end_date: "",
     is_public: true,
+    event_location: "",
   });
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to create a campaign",
-        variant: "destructive",
-      });
-      navigate("/auth");
-    }
-  }, [user, authLoading, navigate, toast]);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -68,43 +72,11 @@ const CreateCampaign = () => {
         });
         return;
       }
-      setCoverImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setCoverImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadCoverImage = async (): Promise<string | null> => {
-    if (!coverImageFile || !user) return null;
-
-    setUploading(true);
-    try {
-      const fileExt = coverImageFile.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("campaign-covers")
-        .upload(fileName, coverImageFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from("campaign-covers")
-        .getPublicUrl(fileName);
-
-      return data.publicUrl;
-    } catch (error: any) {
-      toast({
-        title: "Upload failed",
-        description: error.message,
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -114,67 +86,76 @@ const CreateCampaign = () => {
 
     setLoading(true);
 
-    try {
-      // Upload cover image if selected
-      let coverImageUrl = null;
-      if (coverImageFile) {
-        coverImageUrl = await uploadCoverImage();
-      }
+    // Create new campaign and add to context
+    const newCampaign = {
+      id: `campaign-${Date.now()}`,
+      user_id: user.id,
+      title: formData.title,
+      slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      description: formData.description,
+      goal_amount: formData.goal_amount ? parseFloat(formData.goal_amount) * 100000 : 0, // Convert to satoshis
+      mode: formData.mode,
+      category: formData.category,
+      cover_image_url: coverImagePreview || null,
+      theme_color: formData.theme_color,
+      is_public: formData.is_public,
+      created_at: new Date().toISOString(),
+      end_date: formData.end_date || undefined,
+      event_location: formData.event_location || undefined,
+    };
 
-      const { error } = await supabase.from("campaigns").insert({
-        user_id: user.id,
-        title: formData.title,
-        description: formData.description,
-        goal_amount: parseFloat(formData.goal_amount) || 0,
-        mode: formData.mode,
-        category: formData.category,
-        slug: formData.slug,
-        theme_color: formData.theme_color,
-        cover_image_url: coverImageUrl,
-        end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
-        is_public: formData.is_public,
-      });
+    addCampaign(newCampaign);
 
-      if (error) throw error;
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      toast({
-        title: "Campaign created!",
-        description: "Your campaign has been successfully created.",
-      });
+    toast({
+      title: "Event created!",
+      description: "Your event is now live.",
+    });
 
-      navigate("/app");
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create campaign",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    navigate("/my-links");
+    setLoading(false);
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const campaignUrl = `crowdpay.me/${formData.slug || "your-campaign"}`;
+  const fullUrl = `https://${campaignUrl}`;
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(fullUrl);
+    toast({
+      title: "Link copied!",
+      description: "Share it with your supporters",
+    });
+  };
+
+  const formatEndDate = (dateString: string) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <>
       <Helmet>
-        <title>Create Campaign - CrowdPay</title>
-        <meta name="description" content="Create a new fundraising campaign with Bitcoin and M-Pesa support" />
+        <title>Create Event - CrowdPay</title>
+        <meta name="description" content="Create a new fundraising event with Bitcoin and M-Pesa support" />
       </Helmet>
       
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <Card>
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          {/* Form Section */}
+          <Card>
             <CardHeader>
-              <CardTitle className="text-2xl">Create New Campaign</CardTitle>
+              <CardTitle className="text-2xl">Create New Event</CardTitle>
               <CardDescription>
-                Set up your fundraising campaign with full customization
+                Set up your fundraising event with full customization
               </CardDescription>
             </CardHeader>
             
@@ -196,10 +177,7 @@ const CreateCampaign = () => {
                           variant="secondary"
                           size="sm"
                           className="absolute top-2 right-2"
-                          onClick={() => {
-                            setCoverImageFile(null);
-                            setCoverImagePreview("");
-                          }}
+                          onClick={() => setCoverImagePreview("")}
                         >
                           Remove
                         </Button>
@@ -226,10 +204,10 @@ const CreateCampaign = () => {
 
                 {/* Title */}
                 <div className="space-y-2">
-                  <Label htmlFor="title">Campaign Title *</Label>
+                  <Label htmlFor="title">Event Title *</Label>
                   <Input
                     id="title"
-                    placeholder="My Awesome Campaign"
+                    placeholder="My Awesome Event"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
@@ -238,7 +216,7 @@ const CreateCampaign = () => {
 
                 {/* Slug */}
                 <div className="space-y-2">
-                  <Label htmlFor="slug">Campaign URL</Label>
+                  <Label htmlFor="slug">Event URL</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">crowdpay.me/</span>
                     <Input
@@ -249,7 +227,7 @@ const CreateCampaign = () => {
                       required
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">This will be your campaign's unique URL</p>
+                  <p className="text-xs text-muted-foreground">This will be your event's unique URL</p>
                 </div>
 
                 {/* Description */}
@@ -257,16 +235,16 @@ const CreateCampaign = () => {
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
-                    placeholder="Tell people about your campaign..."
+                    placeholder="Tell people about your event..."
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={5}
+                    rows={4}
                   />
                 </div>
 
                 {/* Category */}
                 <div className="space-y-2">
-                  <Label htmlFor="category">Campaign Category *</Label>
+                  <Label htmlFor="category">Event Category *</Label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
@@ -314,6 +292,19 @@ const CreateCampaign = () => {
                   />
                 </div>
 
+                {/* Event Location - Only show for event mode */}
+                {formData.mode === "event" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="event_location">Event Location</Label>
+                    <Input
+                      id="event_location"
+                      placeholder="e.g., Uhuru Park, Nairobi"
+                      value={formData.event_location}
+                      onChange={(e) => setFormData({ ...formData, event_location: e.target.value })}
+                    />
+                  </div>
+                )}
+
                 {/* Theme Color */}
                 <div className="space-y-2">
                   <Label htmlFor="theme_color">Theme Color</Label>
@@ -336,7 +327,7 @@ const CreateCampaign = () => {
 
                 {/* Mode Selection */}
                 <div className="space-y-3">
-                  <Label>Campaign Type *</Label>
+                  <Label>Event Type *</Label>
                   <RadioGroup
                     value={formData.mode}
                     onValueChange={(value: "merchant" | "event" | "activism") =>
@@ -388,9 +379,9 @@ const CreateCampaign = () => {
                 {/* Visibility */}
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="space-y-0.5">
-                    <Label htmlFor="is_public">Public Campaign</Label>
+                    <Label htmlFor="is_public">Public Event</Label>
                     <p className="text-sm text-muted-foreground">
-                      Make this campaign visible in the public gallery
+                      Make this event visible in the public gallery
                     </p>
                   </div>
                   <Switch
@@ -406,21 +397,173 @@ const CreateCampaign = () => {
                     type="button"
                     variant="outline"
                     onClick={() => navigate("/app")}
-                    disabled={loading || uploading}
+                    disabled={loading}
                     className="flex-1"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={loading || uploading} className="flex-1">
-                    {(loading || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {uploading ? "Uploading..." : loading ? "Creating..." : "Create Campaign"}
+                  <Button type="submit" disabled={loading} className="flex-1">
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {loading ? "Creating..." : "Create Event"}
                   </Button>
                 </div>
               </form>
             </CardContent>
           </Card>
+
+          {/* Live Preview Section */}
+          <div className="space-y-6">
+            <div className="sticky top-4">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <QrCode className="w-5 h-5" />
+                Live Preview - How contributors will see it
+              </h3>
+
+              {/* Campaign Card Preview */}
+              <Card className="overflow-hidden">
+                {coverImagePreview ? (
+                  <div className="w-full h-40 overflow-hidden">
+                    <img
+                      src={coverImagePreview}
+                      alt="Cover preview"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-full h-40 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <ImageIcon className="w-12 h-12 text-muted-foreground/50" />
+                  </div>
+                )}
+
+                <div className="p-5 space-y-4">
+                  {/* Title & Badge */}
+                  <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-xl font-bold" style={{ color: formData.theme_color }}>
+                      {formData.title || "Your Event Title"}
+                    </h2>
+                    <Badge variant="secondary" className="shrink-0">
+                      {categoryLabels[formData.category]?.emoji} {categoryLabels[formData.category]?.label}
+                    </Badge>
+                  </div>
+
+                  {/* Description */}
+                  {formData.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-3">
+                      {formData.description}
+                    </p>
+                  )}
+
+                  {/* Event Details */}
+                  {formData.mode === "event" && (
+                    <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                      {formData.end_date && (
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatEndDate(formData.end_date)}</span>
+                        </div>
+                      )}
+                      {formData.event_location && (
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-4 h-4" />
+                          <span>{formData.event_location}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-4 h-4" />
+                        <span>0 attending</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Progress Bar */}
+                  {formData.goal_amount && (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="font-semibold" style={{ color: formData.theme_color }}>
+                          KES 0
+                        </span>
+                        <span className="text-muted-foreground">
+                          of KES {Number(formData.goal_amount).toLocaleString()}
+                        </span>
+                      </div>
+                      <Progress value={0} className="h-2" />
+                    </div>
+                  )}
+
+                  {/* QR Code Section */}
+                  <div className="pt-4 border-t space-y-4">
+                    <div className="flex justify-center">
+                      <div className="bg-white p-3 rounded-lg shadow-sm">
+                        <QRCodeSVG
+                          value={fullUrl}
+                          size={140}
+                          level="M"
+                          fgColor={formData.theme_color}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Scan to contribute
+                    </p>
+                  </div>
+
+                  {/* Campaign Link */}
+                  <div className="p-3 bg-muted/50 rounded-lg space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Event Link</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 text-sm font-mono bg-background px-3 py-2 rounded border truncate">
+                        {campaignUrl}
+                      </code>
+                      <Button size="sm" variant="outline" onClick={copyLink}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Payment Buttons Preview */}
+                  <div className="grid grid-cols-2 gap-3 pt-2">
+                    <Button
+                      size="sm"
+                      style={{ backgroundColor: formData.theme_color }}
+                      className="text-white"
+                    >
+                      <Bitcoin className="w-4 h-4 mr-1.5" />
+                      Bitcoin
+                    </Button>
+                    <Button size="sm" variant="secondary">
+                      <Smartphone className="w-4 h-4 mr-1.5" />
+                      M-Pesa
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-center text-muted-foreground">
+                    Powered by CrowdPay
+                  </p>
+                </div>
+              </Card>
+
+              {/* Share Info */}
+              <Card className="mt-4 p-4">
+                <h4 className="font-medium mb-2">Share your event</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Once created, share this link or QR code with your supporters to start receiving contributions.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={copyLink}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Link
+                  </Button>
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <QrCode className="w-4 h-4 mr-2" />
+                    Download QR
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          </div>
         </div>
-      </>
+      </div>
+    </>
   );
 };
 

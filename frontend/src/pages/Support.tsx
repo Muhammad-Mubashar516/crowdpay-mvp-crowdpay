@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
-import { 
-  HelpCircle, 
-  MessageCircle, 
-  Mail, 
-  FileText, 
+import {
+  HelpCircle,
+  MessageCircle,
+  Mail,
+  FileText,
   ExternalLink,
   Send,
   ChevronDown,
@@ -68,15 +68,15 @@ const Support = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
-    
+
     // Simulate sending
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     toast({
       title: "Message sent!",
       description: "We'll get back to you within 24 hours.",
     });
-    
+
     setName("");
     setEmail("");
     setMessage("");
@@ -200,8 +200,8 @@ const Support = () => {
                     required
                   />
                 </div>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-primary hover:bg-primary/90"
                   disabled={sending}
                 >

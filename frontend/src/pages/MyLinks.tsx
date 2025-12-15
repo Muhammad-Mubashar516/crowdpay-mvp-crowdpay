@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/MockAuthContext";
+import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Copy, ExternalLink, MoreVertical, Eye, Trash2 } from "lucide-react";
+import { Plus, Copy, ExternalLink, MoreVertical, Eye, Trash2 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import {
   DropdownMenu,
@@ -16,80 +15,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Campaign {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  goal_amount: number;
-  mode: string;
-  category: string | null;
-  is_public: boolean | null;
-  created_at: string;
-  total_raised?: number;
-  contributions_count?: number;
-}
-
 const MyLinks = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { getUserCampaigns } = useCampaigns();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
-
-    if (!user) return;
-
-    const fetchCampaigns = async () => {
-      try {
-        const { data: campaignsData, error } = await supabase
-          .from("campaigns")
-          .select("*")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const campaignsWithStats = await Promise.all(
-          (campaignsData || []).map(async (campaign) => {
-            const { data: contributions } = await supabase
-              .from("contributions")
-              .select("amount")
-              .eq("campaign_id", campaign.id);
-
-            const total_raised = contributions?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
-            const contributions_count = contributions?.length || 0;
-
-            return {
-              ...campaign,
-              total_raised,
-              contributions_count,
-            };
-          })
-        );
-
-        setCampaigns(campaignsWithStats);
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCampaigns();
-  }, [user, authLoading, navigate, toast]);
+  // Filter campaigns for current user and add stats
+  const campaigns = getUserCampaigns(user?.id || "")
+    .map(campaign => {
+      const contributions = mockContributions.filter(c => c.campaign_id === campaign.id);
+      const total_raised = contributions.reduce((sum, c) => sum + c.amount, 0);
+      return {
+        ...campaign,
+        total_raised,
+        contributions_count: contributions.length,
+      };
+    });
 
   const copyLink = (slug: string) => {
-    const link = `${window.location.origin}/c/${slug}`;
+    const link = `crowdpay.me/c/${slug}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copied!",
@@ -106,30 +51,22 @@ const MyLinks = () => {
     }
   };
 
-  if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <>
       <Helmet>
-        <title>My Links - CrowdPay</title>
-        <meta name="description" content="Manage your payment links" />
+        <title>My Events - CrowdPay</title>
+        <meta name="description" content="Manage your events" />
       </Helmet>
 
       <div className="p-6 max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold">My Links</h1>
-            <p className="text-muted-foreground">Manage all your payment links</p>
+            <h1 className="text-2xl font-bold">My Events</h1>
+            <p className="text-muted-foreground">Manage all your events</p>
           </div>
           <Button onClick={() => navigate("/create")} className="bg-primary hover:bg-primary/90">
             <Plus className="mr-2 h-4 w-4" />
-            Create New Link
+            Create New Event
           </Button>
         </div>
 
@@ -193,7 +130,7 @@ const MyLinks = () => {
                         <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                           <span className="text-sm text-muted-foreground">Link:</span>
                           <span className="text-sm font-medium text-primary flex-1 truncate">
-                            {window.location.origin}/c/{campaign.slug}
+                            crowdpay.me/c/{campaign.slug}
                           </span>
                           <Button
                             variant="ghost"

@@ -1,23 +1,20 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/MockAuthContext";
+import { mockCampaigns, mockContributions } from "@/data/mockCampaigns";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bell, Heart, CheckCircle, PartyPopper, Zap, Bitcoin, ArrowRight } from "lucide-react";
+import { Bell, Heart, CheckCircle, PartyPopper, Zap, Bitcoin, ArrowRight } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { format } from "date-fns";
 
 interface Notification {
   id: string;
-  type: "contribution" | "goal_reached" | "new_contributor";
+  type: "contribution" | "goal_reached";
   title: string;
   message: string;
   campaign_slug?: string;
   amount?: number;
-  contributor_name?: string;
   payment_method?: string;
   created_at: string;
   read: boolean;
@@ -25,94 +22,48 @@ interface Notification {
 
 const Notifications = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
+  // Get user's campaigns
+  const userCampaigns = mockCampaigns.filter(c => c.user_id === user?.id);
+  const campaignIds = userCampaigns.map(c => c.id);
+
+  // Build notifications from contributions to user's campaigns
+  const notifications: Notification[] = mockContributions
+    .filter(c => campaignIds.includes(c.campaign_id))
+    .map(contribution => {
+      const campaign = userCampaigns.find(c => c.id === contribution.campaign_id);
+      return {
+        id: contribution.id,
+        type: "contribution" as const,
+        title: "New Contribution",
+        message: `${contribution.contributor_name || "Anonymous"} contributed ${(contribution.amount / 100000000).toFixed(6)} BTC to "${campaign?.title}"`,
+        campaign_slug: campaign?.slug,
+        amount: contribution.amount,
+        payment_method: contribution.payment_method,
+        created_at: contribution.created_at,
+        read: false,
+      };
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  // Check for goal reached notifications
+  userCampaigns.forEach(campaign => {
+    const contributions = mockContributions.filter(c => c.campaign_id === campaign.id);
+    const totalRaised = contributions.reduce((sum, c) => sum + c.amount, 0);
+
+    if (totalRaised >= campaign.goal_amount && contributions.length > 0) {
+      notifications.unshift({
+        id: `goal-${campaign.id}`,
+        type: "goal_reached",
+        title: "🎉 Goal Reached!",
+        message: `"${campaign.title}" has reached its funding goal!`,
+        campaign_slug: campaign.slug,
+        created_at: new Date().toISOString(),
+        read: false,
+      });
     }
-
-    if (!user) return;
-
-    const fetchNotifications = async () => {
-      try {
-        // Fetch recent contributions to user's campaigns as notifications
-        const { data: campaigns } = await supabase
-          .from("campaigns")
-          .select("id, title, slug, goal_amount")
-          .eq("user_id", user.id);
-
-        if (!campaigns || campaigns.length === 0) {
-          setNotifications([]);
-          setLoading(false);
-          return;
-        }
-
-        const campaignIds = campaigns.map(c => c.id);
-        
-        const { data: contributions, error } = await supabase
-          .from("contributions")
-          .select("*")
-          .in("campaign_id", campaignIds)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        if (error) throw error;
-
-        // Transform contributions to notifications
-        const notifs: Notification[] = (contributions || []).map((c) => {
-          const campaign = campaigns.find(camp => camp.id === c.campaign_id);
-          return {
-            id: c.id,
-            type: "contribution",
-            title: "New Contribution",
-            message: `${c.contributor_name || "Anonymous"} contributed ${(c.amount / 100000000).toFixed(6)} BTC to "${campaign?.title}"`,
-            campaign_slug: campaign?.slug,
-            amount: c.amount,
-            contributor_name: c.contributor_name,
-            payment_method: c.payment_method,
-            created_at: c.created_at,
-            read: false,
-          };
-        });
-
-        // Check for campaigns that reached their goal
-        for (const campaign of campaigns) {
-          const campaignContributions = (contributions || [])
-            .filter(c => c.campaign_id === campaign.id);
-          const totalRaised = campaignContributions.reduce((sum, c) => sum + Number(c.amount), 0);
-          
-          if (totalRaised >= campaign.goal_amount && campaignContributions.length > 0) {
-            notifs.push({
-              id: `goal-${campaign.id}`,
-              type: "goal_reached",
-              title: "🎉 Goal Reached!",
-              message: `"${campaign.title}" has reached its funding goal!`,
-              campaign_slug: campaign.slug,
-              created_at: new Date().toISOString(),
-              read: false,
-            });
-          }
-        }
-
-        setNotifications(notifs);
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotifications();
-  }, [user, authLoading, navigate, toast]);
+  });
 
   const getNotificationIcon = (type: string, paymentMethod?: string) => {
     if (type === "goal_reached") {
@@ -140,14 +91,6 @@ const Notifications = () => {
         return null;
     }
   };
-
-  if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -187,9 +130,8 @@ const Notifications = () => {
             {notifications.map((notification) => (
               <Card
                 key={notification.id}
-                className={`group border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 cursor-pointer ${
-                  !notification.read ? "border-l-4 border-l-primary" : ""
-                }`}
+                className={`group border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 cursor-pointer ${!notification.read ? "border-l-4 border-l-primary" : ""
+                  }`}
                 onClick={() => notification.campaign_slug && navigate(`/c/${notification.campaign_slug}`)}
               >
                 <CardContent className="p-4">

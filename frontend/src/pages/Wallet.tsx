@@ -1,56 +1,21 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Bitcoin, Copy, Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, RefreshCw, Zap, QrCode } from "lucide-react";
+import { useAuth } from "@/contexts/MockAuthContext";
+import { Bitcoin, Copy, Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, RefreshCw, Zap, QrCode } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { QRCodeSVG } from "qrcode.react";
 
 const Wallet = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [lightningAddress, setLightningAddress] = useState<string | null>(null);
-  const [onchainAddress, setOnchainAddress] = useState<string | null>(null);
-  const [walletType, setWalletType] = useState<string | null>(null);
-  const [btcBalance] = useState(0.0234); // Placeholder
+  const { wallet } = useAuth();
   const [showQR, setShowQR] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
-
-    if (!user) return;
-
-    const fetchWalletData = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("lightning_address, onchain_address, bitcoin_wallet_type")
-          .eq("id", user.id)
-          .single();
-
-        if (error) throw error;
-
-        setLightningAddress(data?.lightning_address || null);
-        setOnchainAddress(data?.onchain_address || null);
-        setWalletType(data?.bitcoin_wallet_type || null);
-      } catch (error: any) {
-        console.error("Error fetching wallet:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWalletData();
-  }, [user, authLoading, navigate]);
+  const { lightningAddress, onchainAddress, walletType, btcBalance } = wallet;
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -64,14 +29,6 @@ const Wallet = () => {
     const rate = 6410256;
     return Math.round(btc * rate);
   };
-
-  if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -127,37 +84,33 @@ const Wallet = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {lightningAddress ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                    <span className="text-sm font-mono flex-1 truncate">{lightningAddress}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(lightningAddress, "Lightning address")}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+                  <span className="text-sm font-mono flex-1 truncate">{lightningAddress}</span>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    className="w-full"
-                    onClick={() => setShowQR(!showQR)}
+                    onClick={() => copyToClipboard(lightningAddress, "Lightning address")}
+                    className="h-8 w-8 p-0"
                   >
-                    <QrCode className="mr-2 h-4 w-4" />
-                    {showQR ? "Hide" : "Show"} QR Code
+                    <Copy className="h-4 w-4" />
                   </Button>
-                  {showQR && (
-                    <div className="flex justify-center p-4 bg-background rounded-lg">
-                      <QRCodeSVG value={lightningAddress} size={150} />
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No Lightning address configured</p>
-              )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setShowQR(!showQR)}
+                >
+                  <QrCode className="mr-2 h-4 w-4" />
+                  {showQR ? "Hide" : "Show"} QR Code
+                </Button>
+                {showQR && (
+                  <div className="flex justify-center p-4 bg-background rounded-lg">
+                    <QRCodeSVG value={lightningAddress} size={150} />
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
@@ -173,23 +126,19 @@ const Wallet = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {onchainAddress ? (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                    <span className="text-sm font-mono flex-1 truncate">{onchainAddress}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => copyToClipboard(onchainAddress, "On-chain address")}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  </div>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+                  <span className="text-sm font-mono flex-1 truncate">{onchainAddress}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(onchainAddress, "On-chain address")}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No on-chain address configured</p>
-              )}
+              </div>
             </CardContent>
           </Card>
         </div>

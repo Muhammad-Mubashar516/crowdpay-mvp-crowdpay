@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "next-themes";
+import { CampaignsProvider } from "@/contexts/CampaignsContext";
+import { MockAuthProvider } from "@/contexts/MockAuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
@@ -26,27 +28,31 @@ const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
-              <Route path="/explore" element={<AppLayout><ExploreCampaigns /></AppLayout>} />
-              <Route path="/create" element={<AppLayout><CreateCampaign /></AppLayout>} />
-              <Route path="/my-links" element={<AppLayout><MyLinks /></AppLayout>} />
-              <Route path="/contributions" element={<AppLayout><Contributions /></AppLayout>} />
-              <Route path="/wallet" element={<AppLayout><Wallet /></AppLayout>} />
-              <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
-              <Route path="/settings" element={<AppLayout><ProfileSettings /></AppLayout>} />
-              <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
-              <Route path="/c/:slug" element={<Campaign />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <MockAuthProvider>
+          <CampaignsProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
+                  <Route path="/explore" element={<AppLayout><ExploreCampaigns /></AppLayout>} />
+                  <Route path="/create" element={<AppLayout><CreateCampaign /></AppLayout>} />
+                  <Route path="/my-links" element={<AppLayout><MyLinks /></AppLayout>} />
+                  <Route path="/contributions" element={<AppLayout><Contributions /></AppLayout>} />
+                  <Route path="/wallet" element={<AppLayout><Wallet /></AppLayout>} />
+                  <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
+                  <Route path="/settings" element={<AppLayout><ProfileSettings /></AppLayout>} />
+                  <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
+                  <Route path="/c/:slug" element={<Campaign />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </CampaignsProvider>
+        </MockAuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </HelmetProvider>
