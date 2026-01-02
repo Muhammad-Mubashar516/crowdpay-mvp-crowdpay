@@ -31,7 +31,7 @@ import {
 const mainItems = [
   { title: "Dashboard", url: "/app", icon: Home },
   { title: "My Links", url: "/my-links", icon: Link2 },
-  { title: "Create Link", url: "/create", icon: Plus },
+  { title: "Create Link", url: "/create", icon: Plus }, // Verify this is correct
   { title: "Contributions", url: "/contributions", icon: Heart },
   { title: "Wallet", url: "/wallet", icon: Wallet },
   { title: "Notifications", url: "/notifications", icon: Bell },

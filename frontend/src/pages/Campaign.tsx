@@ -1,26 +1,14 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { supabase } from "@/integrations/supabase/client";
+import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Bitcoin, Smartphone, Loader2, Share2 } from "lucide-react";
-
-interface Campaign {
-  id: string;
-  title: string;
-  description: string | null;
-  goal_amount: number;
-  cover_image_url: string | null;
-  theme_color: string | null;
-  slug: string | null;
-  category: string;
-  user_id: string;
-}
+import { Bitcoin, Smartphone, Share2 } from "lucide-react";
 
 const categoryLabels: Record<string, { label: string; emoji: string }> = {
   education: { label: "Education", emoji: "🎓" },
@@ -38,62 +26,29 @@ const Campaign = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [totalRaised, setTotalRaised] = useState(0);
+  const { getCampaignBySlug } = useCampaigns();
   const [contributorName, setContributorName] = useState("");
 
+  // Find campaign from context
+  const campaign = getCampaignBySlug(slug || "");
+
+  // Calculate total raised from mock contributions
+  const totalRaised = campaign
+    ? mockContributions
+        .filter((c) => c.campaign_id === campaign.id)
+        .reduce((sum, c) => sum + c.amount, 0)
+    : 0;
+
   useEffect(() => {
-    const fetchCampaign = async () => {
-      if (!slug) {
-        navigate("/");
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("campaigns")
-          .select("*")
-          .eq("slug", slug)
-          .single();
-
-        if (error) throw error;
-
-        if (!data) {
-          toast({
-            title: "Campaign not found",
-            description: "This campaign doesn't exist or has been removed",
-            variant: "destructive",
-          });
-          navigate("/");
-          return;
-        }
-
-        setCampaign(data as Campaign);
-
-        // Fetch total raised
-        const { data: contributions } = await supabase
-          .from("contributions")
-          .select("amount")
-          .eq("campaign_id", data.id);
-
-        const total = contributions?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
-        setTotalRaised(total);
-      } catch (error: any) {
-        console.error("Error fetching campaign:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load campaign",
-          variant: "destructive",
-        });
-        navigate("/");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCampaign();
-  }, [slug, navigate, toast]);
+    if (!slug || !campaign) {
+      toast({
+        title: "Campaign not found",
+        description: "This campaign doesn't exist or has been removed",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+  }, [slug, campaign, navigate, toast]);
 
   const handlePayment = (method: "bitcoin" | "mpesa") => {
     if (!contributorName.trim()) {
@@ -106,13 +61,13 @@ const Campaign = () => {
     }
 
     toast({
-      title: "Payment Coming Soon",
-      description: `${method === "bitcoin" ? "Bitcoin" : "M-Pesa"} payment integration will be available soon!`,
+      title: "Demo Mode",
+      description: `${method === "bitcoin" ? "Bitcoin" : "M-Pesa"} payment would be processed here in production.`,
     });
   };
 
   const shareLink = () => {
-    const url = window.location.href;
+    const url = `https://crowdpay.me/c/${slug}`;
     if (navigator.share) {
       navigator.share({
         title: campaign?.title,
@@ -127,14 +82,6 @@ const Campaign = () => {
       });
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   if (!campaign) {
     return null;
@@ -203,7 +150,7 @@ const Campaign = () => {
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <h1 className="text-3xl font-bold flex-1">{campaign.title}</h1>
                   <Badge variant="secondary" className="shrink-0">
-                    {categoryLabels[campaign.category]?.emoji} {categoryLabels[campaign.category]?.label}
+                    {categoryLabels[campaign.category || "other"]?.emoji} {categoryLabels[campaign.category || "other"]?.label}
                   </Badge>
                 </div>
                 {campaign.description && (

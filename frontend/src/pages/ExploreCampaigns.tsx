@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -48,13 +48,25 @@ const categoryLabels: Record<string, { label: string; emoji: string }> = {
 };
 
 export default function ExploreCampaigns() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filteredCampaigns, setFilteredCampaigns] = useState<Campaign[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+  const { getPublicCampaigns } = useCampaigns();
+
+  // Get public campaigns from context with contribution stats
+  const campaigns = useMemo(() => {
+    return getPublicCampaigns().map(campaign => {
+      const contributions = mockContributions.filter(c => c.campaign_id === campaign.id);
+      return {
+        ...campaign,
+        totalRaised: contributions.reduce((sum, c) => sum + c.amount, 0),
+        contributionCount: contributions.length,
+      };
+    });
+  }, [getPublicCampaigns]);
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredCampaigns.length / ITEMS_PER_PAGE);
@@ -68,48 +80,10 @@ export default function ExploreCampaigns() {
     setCurrentPage(1);
   }, [selectedCategory, searchQuery]);
 
+  // Initialize and set loading to false
   useEffect(() => {
-    fetchPublicCampaigns();
+    setLoading(false);
   }, []);
-
-  const fetchPublicCampaigns = async () => {
-    try {
-      const { data: campaignsData, error } = await supabase
-        .from("campaigns")
-        .select("*")
-        .eq("is_public", true)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      if (campaignsData) {
-        const campaignsWithStats = await Promise.all(
-          campaignsData.map(async (campaign) => {
-            const { data: contributions } = await supabase
-              .from("contributions")
-              .select("amount")
-              .eq("campaign_id", campaign.id);
-
-            const totalRaised = contributions?.reduce((sum, c) => sum + Number(c.amount), 0) || 0;
-            const contributionCount = contributions?.length || 0;
-
-            return {
-              ...campaign,
-              totalRaised,
-              contributionCount,
-            };
-          })
-        );
-
-        setCampaigns(campaignsWithStats);
-        setFilteredCampaigns(campaignsWithStats);
-      }
-    } catch (error) {
-      console.error("Error fetching campaigns:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     let filtered = campaigns;
@@ -147,15 +121,15 @@ export default function ExploreCampaigns() {
   return (
     <>
       <Helmet>
-        <title>Explore Campaigns - CrowdPay</title>
-        <meta name="description" content="Browse and support public fundraising campaigns on CrowdPay" />
+        <title>Explore Events - CrowdPay</title>
+        <meta name="description" content="Browse and support public fundraising events on CrowdPay" />
       </Helmet>
 
       <div className="container mx-auto p-6 max-w-7xl">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Explore Campaigns</h1>
+          <h1 className="text-4xl font-bold mb-2">Explore Events</h1>
           <p className="text-muted-foreground">
-            Discover and support fundraising campaigns from the community
+            Discover and support fundraising events from the community
           </p>
         </div>
 
@@ -164,7 +138,7 @@ export default function ExploreCampaigns() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search campaigns by title or description..."
+              placeholder="Search events by title or description..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -198,14 +172,14 @@ export default function ExploreCampaigns() {
           <Card className="p-12 text-center">
             <Target className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">
-              {selectedCategory === "all" ? "No Public Campaigns Yet" : `No ${categoryLabels[selectedCategory]?.label} Campaigns`}
+              {selectedCategory === "all" ? "No Public Events Yet" : `No ${categoryLabels[selectedCategory]?.label} Events`}
             </h3>
             <p className="text-muted-foreground mb-6">
               {selectedCategory === "all" 
-                ? "Be the first to create a public campaign and inspire others!"
-                : "No campaigns found in this category. Try another category or create one!"}
+                ? "Be the first to create a public event and inspire others!"
+                : "No events found in this category. Try another category or create one!"}
             </p>
-            <Button onClick={() => navigate("/create")}>Create Campaign</Button>
+            <Button onClick={() => navigate("/create")}>Create Event</Button>
           </Card>
         ) : (
           <>

@@ -1,83 +1,29 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/contexts/MockAuthContext";
+import { mockCampaigns, mockContributions } from "@/data/mockCampaigns";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, Heart, ArrowUpRight, Calendar } from "lucide-react";
+import { Heart, ArrowUpRight, Calendar } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { format } from "date-fns";
 
-interface Contribution {
-  id: string;
-  amount: number;
-  payment_method: string;
-  created_at: string;
-  campaign: {
-    title: string;
-    slug: string;
-  };
-}
-
 const Contributions = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const [contributions, setContributions] = useState<Contribution[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalContributed, setTotalContributed] = useState(0);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-      return;
-    }
+  // Get contributions made by the user with campaign info
+  const contributions = mockContributions
+    .filter(c => c.user_id === user?.id)
+    .map(contribution => {
+      const campaign = mockCampaigns.find(c => c.id === contribution.campaign_id);
+      return {
+        ...contribution,
+        campaign: campaign ? { title: campaign.title, slug: campaign.slug } : null,
+      };
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    if (!user) return;
-
-    const fetchContributions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("contributions")
-          .select(`
-            id,
-            amount,
-            payment_method,
-            created_at,
-            campaigns:campaign_id (
-              title,
-              slug
-            )
-          `)
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
-
-        if (error) throw error;
-
-        const formattedContributions = (data || []).map((c: any) => ({
-          id: c.id,
-          amount: c.amount,
-          payment_method: c.payment_method,
-          created_at: c.created_at,
-          campaign: c.campaigns,
-        }));
-
-        setContributions(formattedContributions);
-        setTotalContributed(formattedContributions.reduce((sum, c) => sum + Number(c.amount), 0));
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchContributions();
-  }, [user, authLoading, navigate, toast]);
+  const totalContributed = contributions.reduce((sum, c) => sum + c.amount, 0);
 
   const getPaymentMethodBadge = (method: string) => {
     switch (method) {
@@ -91,14 +37,6 @@ const Contributions = () => {
         return <Badge variant="secondary">{method}</Badge>;
     }
   };
-
-  if (authLoading || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <>
@@ -151,7 +89,7 @@ const Contributions = () => {
               <Card
                 key={contribution.id}
                 className="group border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/c/${contribution.campaign?.slug}`)}
+                onClick={() => contribution.campaign?.slug && navigate(`/c/${contribution.campaign.slug}`)}
               >
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between">

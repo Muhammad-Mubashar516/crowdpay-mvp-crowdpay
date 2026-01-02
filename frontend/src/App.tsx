@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/AppLayout";
+import { MockAuthProvider } from "@/contexts/MockAuthContext";
+import { CampaignsProvider } from "@/contexts/CampaignsContext";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import CreateCampaign from "./pages/CreateCampaign";
@@ -30,21 +32,25 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
-              <Route path="/explore" element={<AppLayout><ExploreCampaigns /></AppLayout>} />
-              <Route path="/create" element={<AppLayout><CreateCampaign /></AppLayout>} />
-              <Route path="/my-links" element={<AppLayout><MyLinks /></AppLayout>} />
-              <Route path="/contributions" element={<AppLayout><Contributions /></AppLayout>} />
-              <Route path="/wallet" element={<AppLayout><Wallet /></AppLayout>} />
-              <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
-              <Route path="/settings" element={<AppLayout><ProfileSettings /></AppLayout>} />
-              <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
-              <Route path="/c/:slug" element={<Campaign />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <MockAuthProvider>
+              <CampaignsProvider>
+                <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
+                <Route path="/explore" element={<AppLayout><ExploreCampaigns /></AppLayout>} />
+                <Route path="/create" element={<AppLayout><CreateCampaign /></AppLayout>} />
+                <Route path="/my-links" element={<AppLayout><MyLinks /></AppLayout>} />
+                <Route path="/contributions" element={<AppLayout><Contributions /></AppLayout>} />
+                <Route path="/wallet" element={<AppLayout><Wallet /></AppLayout>} />
+                <Route path="/notifications" element={<AppLayout><Notifications /></AppLayout>} />
+                <Route path="/settings" element={<AppLayout><ProfileSettings /></AppLayout>} />
+                <Route path="/support" element={<AppLayout><Support /></AppLayout>} />
+                <Route path="/c/:slug" element={<Campaign />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              </CampaignsProvider>
+            </MockAuthProvider>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

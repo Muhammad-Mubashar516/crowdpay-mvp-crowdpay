@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/MockAuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,98 +12,39 @@ import { Loader2, User, Wallet, Shield, Bell, Zap, Bitcoin } from "lucide-react"
 import { Switch } from "@/components/ui/switch";
 
 const ProfileSettings = () => {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
+  
+  // Mock profile data
+  const [username, setUsername] = useState("demo_user");
+  const [fullName, setFullName] = useState("Demo User");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bitcoinWalletType, setBitcoinWalletType] = useState("internal");
-  const [lightningAddress, setLightningAddress] = useState("");
-  const [onchainAddress, setOnchainAddress] = useState("");
+  const [lightningAddress, setLightningAddress] = useState("demo@crowdpay.me");
+  const [onchainAddress, setOnchainAddress] = useState("bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh");
   const [emailNotifications, setEmailNotifications] = useState(true);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
-
-    if (!user) return;
-
-    const fetchProfile = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (error) throw error;
-
-        if (data) {
-          setUsername(data.username || "");
-          setFullName(data.full_name || "");
-          setAvatarUrl(data.avatar_url || "");
-          setBitcoinWalletType(data.bitcoin_wallet_type || "internal");
-          setLightningAddress(data.lightning_address || "");
-          setOnchainAddress(data.onchain_address || "");
-        }
-      } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
-      }
-    };
-
-    fetchProfile();
-  }, [user, authLoading, navigate, toast]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
-
     setLoading(true);
 
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          username,
-          full_name: fullName || null,
-          avatar_url: avatarUrl || null,
-          bitcoin_wallet_type: bitcoinWalletType,
-          lightning_address: lightningAddress || null,
-          onchain_address: onchainAddress || null,
-        })
-        .eq("id", user.id);
+    // Simulate save
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      if (error) throw error;
-
-      toast({
-        title: "Success!",
-        description: "Your profile has been updated.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    toast({
+      title: "Success!",
+      description: "Your profile has been updated (demo mode).",
+    });
+    
+    setLoading(false);
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const handleSignOut = () => {
+    signOut();
+    navigate("/");
+  };
 
   return (
     <>
@@ -293,7 +233,7 @@ const ProfileSettings = () => {
             <Button 
               type="button" 
               variant="outline" 
-              onClick={signOut}
+              onClick={handleSignOut}
               className="flex-1"
             >
               Sign Out
