@@ -8,12 +8,14 @@ import { ThemeProvider } from "next-themes";
 import { AppLayout } from "@/components/AppLayout";
 import { MockAuthProvider } from "@/contexts/MockAuthContext";
 import { CampaignsProvider } from "@/contexts/CampaignsContext";
+import { LinksProvider } from "@/contexts/LinksContext";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import CreateCampaign from "./pages/CreateCampaign";
 import Campaign from "./pages/Campaign";
 import ExploreCampaigns from "./pages/ExploreCampaigns";
 import Auth from "./pages/Auth";
+import SignUp from "./pages/SignUp";
 import ProfileSettings from "./pages/ProfileSettings";
 import MyLinks from "./pages/MyLinks";
 import Contributions from "./pages/Contributions";
@@ -34,9 +36,11 @@ const App = () => (
           <BrowserRouter>
             <MockAuthProvider>
               <CampaignsProvider>
+              <LinksProvider>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/signup" element={<SignUp />} />
                 <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
                 <Route path="/explore" element={<AppLayout><ExploreCampaigns /></AppLayout>} />
                 <Route path="/create" element={<AppLayout><CreateCampaign /></AppLayout>} />
@@ -49,6 +53,7 @@ const App = () => (
                 <Route path="/c/:slug" element={<Campaign />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </LinksProvider>
               </CampaignsProvider>
             </MockAuthProvider>
           </BrowserRouter>
