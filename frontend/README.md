@@ -2,9 +2,11 @@
 
 A Kenya-focused crowdfunding platform that bridges M-Pesa and Bitcoin/Lightning Network, enabling seamless fundraising with multiple payment options.
 
+🔗 **Live Demo**: [https://crowd-pay.netlify.app/](https://crowd-pay.netlify.app/)
+
 ## Overview
 
-CrowdPay allows users to create customizable fundraising campaigns that accept both local currency (KES via M-Pesa) and Bitcoin (Lightning & On-chain). Campaign creators receive instant Bitcoin settlement while contributors can pay using their preferred method.
+CrowdPay allows users to create customizable fundraising events that accept both local currency (KES via M-Pesa) and Bitcoin (Lightning & On-chain). Event creators receive instant Bitcoin settlement while contributors can pay using their preferred method.
 
 ## Tech Stack
 
@@ -13,8 +15,8 @@ CrowdPay allows users to create customizable fundraising campaigns that accept b
 - **Routing**: React Router v6
 - **State Management**: TanStack Query (React Query)
 - **Animations**: Framer Motion
-- **Backend**: Python
-- **Bitcoin**: Blink API (Lightning Network integration)
+- **Backend**: Flask Python
+- **Bitcoin**: Minmo API (Lightning Network integration)
 
 ## Project Structure
 
@@ -80,23 +82,6 @@ public/
 └── placeholder.svg
 ```
 
-## Database Schema
-
-### Tables
-
-- **campaigns**: Stores fundraising campaigns
-  - `id`, `title`, `description`, `goal_amount`, `mode`, `category`
-  - `slug` (custom URL), `cover_image_url`, `theme_color`
-  - `is_public`, `end_date`, `user_id`
-
-- **contributions**: Records all donations
-  - `id`, `campaign_id`, `amount`, `contributor_name`
-  - `payment_method`, `user_id`
-
-- **profiles**: User profile information
-  - `id`, `username`, `full_name`, `avatar_url`
-  - `lightning_address`, `onchain_address`, `bitcoin_wallet_type`
-
 ## Key Features
 
 ### Campaign Modes
@@ -109,7 +94,7 @@ public/
 - Bitcoin Lightning Network (instant)
 - Bitcoin On-chain
 
-### Campaign Features
+### Event Features
 - Custom slugs (crowdpay.me/your-campaign)
 - Cover images and theme colors
 - Category filtering and search
