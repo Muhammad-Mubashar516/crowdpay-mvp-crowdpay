@@ -1,20 +1,18 @@
 import { useState, useEffect } from "react";
-import {
-  Home,
-  Plus,
-  Settings,
-  LogOut,
-  Link2,
-  Wallet,
-  Bell,
+import { 
+  Home, 
+  Plus, 
+  Settings, 
+  LogOut, 
+  Link2, 
+  Wallet, 
+  Bell, 
   HelpCircle,
   Heart,
   Sun,
-  Moon,
-  Compass
+  Moon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
@@ -32,9 +30,8 @@ import {
 
 const mainItems = [
   { title: "Dashboard", url: "/app", icon: Home },
-  { title: "Explore Events", url: "/explore", icon: Compass },
-  { title: "My Events", url: "/my-links", icon: Link2 },
-  { title: "Create Event", url: "/create", icon: Plus },
+  { title: "My Links", url: "/my-links", icon: Link2 },
+  { title: "Create Link", url: "/create", icon: Plus }, // Verify this is correct
   { title: "Contributions", url: "/contributions", icon: Heart },
   { title: "Wallet", url: "/wallet", icon: Wallet },
   { title: "Notifications", url: "/notifications", icon: Bell },
@@ -45,10 +42,12 @@ const mainItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const { theme, setTheme, resolvedTheme } = useTheme();
   const isCollapsed = state === "collapsed";
   const [mounted, setMounted] = useState(false);
+  
+  // Mock user data
+  const username = "demo_user";
 
   useEffect(() => {
     setMounted(true);
@@ -56,11 +55,6 @@ export function AppSidebar() {
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
-  };
-
-  const handleLogout = () => {
-    signOut();
-    navigate("/");
   };
 
   return (
@@ -127,8 +121,8 @@ export function AppSidebar() {
 
               {/* Logout Button */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleLogout}
+                <SidebarMenuButton 
+                  onClick={signOut} 
                   className="text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 >
                   <LogOut className="h-4 w-4" />

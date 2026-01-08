@@ -16,7 +16,7 @@ const ProfileSettings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-
+  
   // Mock profile data
   const [username, setUsername] = useState("demo_user");
   const [fullName, setFullName] = useState("Demo User");
@@ -37,7 +37,7 @@ const ProfileSettings = () => {
       title: "Success!",
       description: "Your profile has been updated (demo mode).",
     });
-
+    
     setLoading(false);
   };
 
@@ -216,9 +216,9 @@ const ProfileSettings = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button
-              type="submit"
-              disabled={loading}
+            <Button 
+              type="submit" 
+              disabled={loading} 
               className="flex-1 bg-primary hover:bg-primary/90"
             >
               {loading ? (
@@ -230,9 +230,9 @@ const ProfileSettings = () => {
                 "Save Changes"
               )}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
+            <Button 
+              type="button" 
+              variant="outline" 
               onClick={handleSignOut}
               className="flex-1"
             >
