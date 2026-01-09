@@ -7,7 +7,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { Helmet } from "react-helmet-async";
-import { Zap, Wallet, RefreshCw, Copy, Check, ArrowRight, ArrowLeft } from "lucide-react";
+import { Zap, Wallet, RefreshCw, Copy, Check, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import logo from "@/assets/logo.png";
 import bitcoinLogo from "@/assets/bitcoin-logo.png";
 
@@ -19,6 +19,8 @@ const SignUp = () => {
   const [username, setUsername] = useState("");
   const [lightningAddress, setLightningAddress] = useState("");
   const [onchainAddress, setOnchainAddress] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [generatingLightning, setGeneratingLightning] = useState(false);
   const [generatingOnchain, setGeneratingOnchain] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -129,6 +131,7 @@ const SignUp = () => {
     setStep(1);
   };
 
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -200,26 +203,45 @@ const SignUp = () => {
                   />
                 </div>
 
-                <div>
+
+                <div className="relative">
                   <Label className="text-sm font-medium mb-2 block">Password *</Label>
                   <Input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-9 text-muted-foreground"
+                    tabIndex={-1}
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
 
-                <div>
+                <div className="relative">
                   <Label className="text-sm font-medium mb-2 block">Confirm Password *</Label>
                   <Input
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
                   />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-9 text-muted-foreground"
+                    tabIndex={-1}
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
 
                 <Button type="submit" className="w-full gap-2">
@@ -230,7 +252,7 @@ const SignUp = () => {
                 <div className="text-center text-sm text-muted-foreground">
                   <p>
                     Already have an account?{" "}
-                    <Link to="/auth" className="text-primary hover:underline font-medium">
+                    <Link to="/signin" className="text-primary hover:underline font-medium">
                       Sign In
                     </Link>
                   </p>
@@ -338,9 +360,18 @@ const SignUp = () => {
                   </Button>
                 </div>
 
+
                 <div className="pt-4 space-y-3">
                   <Button onClick={handleSignUp} className="w-full">
                     Complete Sign Up
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-2"
+                    onClick={() => navigate("/app")}
+                  >
+                    Skip this step
                   </Button>
                   <Button
                     type="button"
@@ -361,15 +392,40 @@ const SignUp = () => {
           </Card>
         </div>
 
-        {/* Footer */}
-        <footer className="py-12 px-4 bg-accent mt-16">
-          <div className="container mx-auto text-center">
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} CrowdPay. Bitcoin-powered crowdfunding platform.
-            </p>
-          </div>
-        </footer>
+       
       </div>
+
+      {/* Footer (copied from Landing) */}
+      <footer className="py-12 px-4 bg-secondary dark:bg-slate-900 text-foreground dark:text-white">
+        <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+              <img src={logo} alt="CrowdPay" className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-2xl">CrowdPay</span>
+          </div>
+          <div className="flex gap-6 text-sm text-muted-foreground">
+            {["Browse Events", "Features", "How it Works"].map(item => (
+              <a key={item} href="#" className="hover:text-foreground transition-colors">{item}</a>
+            ))}
+          </div>
+          <div className="flex gap-4">
+            <a href="https://x.com/crowdpay_ke" target="_blank" rel="noopener noreferrer">
+              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M22.46 6c-.77.35-1.6.59-2.47.7a4.3 4.3 0 0 0 1.88-2.37c-.83.5-1.75.87-2.72 1.07A4.28 4.28 0 0 0 16.11 4c-2.37 0-4.29 1.92-4.29 4.29 0 .34.04.67.11.99C7.69 9.13 4.07 7.2 1.64 4.16c-.37.64-.58 1.38-.58 2.17 0 1.5.76 2.83 1.92 3.61-.71-.02-1.38-.22-1.97-.54v.05c0 2.1 1.49 3.85 3.47 4.25-.36.1-.74.16-1.13.16-.28 0-.54-.03-.8-.08.54 1.68 2.11 2.9 3.97 2.93A8.6 8.6 0 0 1 2 19.54c-.29 0-.57-.02-.85-.05A12.13 12.13 0 0 0 8.29 21c7.55 0 11.68-6.26 11.68-11.68 0-.18-.01-.36-.02-.54A8.18 8.18 0 0 0 24 4.59a8.36 8.36 0 0 1-2.54.7z"></path></svg>
+              </Button>
+            </a>
+            <a href="https://www.instagram.com/crowd.pay" target="_blank" rel="noopener noreferrer">
+              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5h-8.5zm4.25 2.75a5.75 5.75 0 1 1 0 11.5 5.75 5.75 0 0 1 0-11.5zm0 1.5a4.25 4.25 0 1 0 0 8.5 4.25 4.25 0 0 0 0-8.5zm6.5 1.25a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0z"></path></svg>
+              </Button>
+            </a>
+          </div>
+        </div>
+        <div className="text-center mt-8 text-muted-foreground text-sm">
+          © {new Date().getFullYear()} CrowdPay. Bitcoin-powered crowdfunding.
+        </div>
+      </footer>
     </>
   );
 };
