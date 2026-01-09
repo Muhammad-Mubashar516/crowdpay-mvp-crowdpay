@@ -2,7 +2,7 @@
 
 A Kenya-focused crowdfunding platform that bridges M-Pesa and Bitcoin/Lightning Network, enabling seamless fundraising with multiple payment options.
 
-🔗 **Live Demo**: [https://crowd-pay.netlify.app/](https://crowd-pay.netlify.app/)
+🔗 **Live Demo**: [https://crowdpay.netlify.app/](https://crowdpay.netlify.app/)
 
 ## Overview
 
@@ -16,7 +16,7 @@ CrowdPay allows users to create customizable fundraising events that accept both
 - **State Management**: TanStack Query (React Query)
 - **Animations**: Framer Motion
 - **Backend**: Flask Python
-- **Bitcoin**: Minmo API (Lightning Network integration)
+- **Bitcoin**: Bitnob API (Lightning Network integration)
 
 ## Project Structure
 
@@ -90,7 +90,7 @@ public/
 - **Mode C (Activism)**: Privacy-focused with anonymous donations
 
 ### Payment Options
-- M-Pesa (KES) with automatic BTC conversion via Minmo
+- M-Pesa (KES) with automatic BTC conversion via Bitnob API
 - Bitcoin Lightning Network (instant)
 - Bitcoin On-chain
 
@@ -133,10 +133,11 @@ The app uses a consistent design system defined in:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/DadaDevelopers/crowdpay-mvp-crowdpay
 
 # Navigate to project directory
-cd crowdpay
+cd crowdpay-mvp-crowdpay
+
 
 # Install dependencies
 npm install
@@ -145,16 +146,7 @@ npm install
 npm run dev
 ```
 
-### Environment Variables
-
-Create a `.env` file with:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
-VITE_SUPABASE_PROJECT_ID=your_project_id
-```
-
-## Scripts
+### Scripts
 
 ```bash
 npm run dev      # Start development server

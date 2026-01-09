@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Zap, Store, Users, Shield, Globe, Lock, ArrowRight, Share2, Twitter, Instagram, Sun, Moon } from "lucide-react";
+import { Zap, Store, Users, Shield, Globe, Lock, ArrowRight, Share2, Twitter, Instagram, Sun, Moon, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
@@ -179,7 +179,7 @@ const Landing = () => {
               >
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
-              <Button onClick={() => navigate("/auth")} variant="secondary" size="sm" className="bg-white/10 backdrop-blur-sm text-white hover:bg-white/20">
+              <Button onClick={() => navigate("/signin")} variant="secondary" size="sm" className="bg-white/10 backdrop-blur-sm text-white hover:bg-white/20">
                 Sign In
               </Button>
             </div>
@@ -378,8 +378,15 @@ const Landing = () => {
             ))}
           </div>
           <div className="flex gap-4">
-            <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Twitter className="w-5 h-5" /></Button>
-            <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Instagram className="w-5 h-5" /></Button>
+            <a href="https://x.com/crowdpay_ke" target="_blank" rel="noopener noreferrer">
+              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Twitter className="w-5 h-5" /></Button>
+            </a>
+            <a href="https://www.instagram.com/crowd.pay" target="_blank" rel="noopener noreferrer">
+              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Instagram className="w-5 h-5" /></Button>
+            </a>
+            <a href="mailto:crowdpay2026@gmail.com" target="_blank" rel="noopener noreferrer">
+              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Mail className="w-5 h-5" /></Button>
+            </a>
           </div>
         </div>
         <div className="text-center mt-8 text-muted-foreground text-sm">
