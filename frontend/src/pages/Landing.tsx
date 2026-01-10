@@ -355,7 +355,7 @@ const Landing = () => {
       {/* CTA */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary to-orange-600 text-white text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <h2 className="text-3xl sm:text-5xl font-bold mb-6">Ready to Start?</h2>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to Start Accepting Bitcoin?</h2>
           <div className="flex justify-center gap-4">
             <Button size="lg" variant="secondary" onClick={() => navigate("/signup")} className="text-lg px-8">Create Your Link</Button>
             <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent border-white text-white hover:bg-white/10">Learn More</Button>
@@ -367,7 +367,7 @@ const Landing = () => {
       <footer className="py-12 px-4 bg-secondary dark:bg-slate-900 text-foreground dark:text-white">
         <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+            <div className="w-10 h-10 flex items-center justify-center">
               <img src={logo} alt="CrowdPay" className="w-6 h-6" />
             </div>
             <span className="font-bold text-2xl">CrowdPay</span>

@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/MockAuthContext";
-import { useLinks, mockContributions } from "@/contexts/LinksContext";
+import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { useBtcRate, btcToKes } from "@/hooks/useBtcRate";
 import { Plus, Bitcoin, Copy, TrendingUp, Link2 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
@@ -14,29 +13,28 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const { getUserLinks } = useLinks();
-  const { btcToKes: btcToKesRate, loading: rateLoading } = useBtcRate();
+  const { getUserCampaigns } = useCampaigns();
   const [btcBalance] = useState(0.0234);
   
-  // Use links from context filtered for current user
-  const links = getUserLinks(user?.id || "").map(l => {
-    const contributions = mockContributions.filter(cont => cont.link_id === l.id);
+  // Use campaigns from context filtered for current user
+  const campaigns = getUserCampaigns(user?.id || "").map(c => {
+    const contributions = mockContributions.filter(cont => cont.campaign_id === c.id);
     const total_raised = contributions.reduce((sum, cont) => sum + cont.amount, 0);
     return {
-      id: l.id,
-      title: l.title,
-      slug: l.slug,
-      description: l.description,
-      goal_amount: l.goal_amount,
+      id: c.id,
+      title: c.title,
+      slug: c.slug,
+      description: c.description,
+      goal_amount: c.goal_amount,
       total_raised,
       contributions_count: contributions.length,
     };
   });
 
-  const totalRaised = links.reduce((sum, l) => sum + (l.total_raised || 0), 0);
+  const totalRaised = campaigns.reduce((sum, c) => sum + (c.total_raised || 0), 0);
 
   const copyLink = (slug: string) => {
-    const link = `crowdpay.me/${slug}`;
+    const link = `${window.location.origin}/c/${slug}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copied!",
@@ -44,13 +42,18 @@ const Dashboard = () => {
     });
   };
 
+  // Convert BTC to KES (approximate rate)
+  const btcToKes = (btc: number) => {
+    const rate = 6410256; // Approximate BTC to KES rate
+    return Math.round(btc * rate);
+  };
 
 
   return (
     <>
       <Helmet>
         <title>Dashboard - CrowdPay</title>
-        <meta name="description" content="Manage your payment links" />
+        <meta name="description" content="Manage your fundraising campaigns" />
       </Helmet>
 
       <div className="p-6 max-w-5xl mx-auto">
@@ -64,11 +67,7 @@ const Dashboard = () => {
                   <p className="text-sm text-muted-foreground mb-1">BTC Balance</p>
                   <p className="text-2xl font-bold">{btcBalance.toFixed(4)} BTC</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {rateLoading ? (
-                      "Loading rate..."
-                    ) : (
-                      `≈ KES ${btcToKes(btcBalance, btcToKesRate).toLocaleString()}`
-                    )}
+                    ≈ KES {btcToKes(btcBalance).toLocaleString()}
                   </p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
@@ -84,7 +83,7 @@ const Dashboard = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Active Links</p>
-                  <p className="text-2xl font-bold">{links.length}</p>
+                  <p className="text-2xl font-bold">{campaigns.length}</p>
                   <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">Currently Active</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
@@ -113,8 +112,8 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Links List */}
-        {links.length === 0 ? (
+        {/* Campaigns List */}
+        {campaigns.length === 0 ? (
           <Card className="border-2 border-dashed border-border bg-card/50 backdrop-blur-sm">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
@@ -132,21 +131,21 @@ const Dashboard = () => {
           </Card>
         ) : (
           <div className="space-y-4">
-            {links.map((link) => {
-              const progress = link.goal_amount > 0
-                ? ((link.total_raised || 0) / link.goal_amount) * 100
+            {campaigns.map((campaign) => {
+              const progress = campaign.goal_amount > 0
+                ? ((campaign.total_raised || 0) / campaign.goal_amount) * 100
                 : 0;
-              const btcRaised = (link.total_raised || 0) / 100000000;
-              const btcGoal = link.goal_amount / 100000000;
+              const btcRaised = (campaign.total_raised || 0) / 100000000;
+              const btcGoal = campaign.goal_amount / 100000000;
 
               return (
-                <Card key={link.id} className="group border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
+                <Card key={campaign.id} className="group border border-border/50 bg-card/80 backdrop-blur-sm hover:shadow-lg hover:shadow-primary/5 transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {/* Header */}
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{link.title}</h3>
+                          <h3 className="font-semibold text-lg group-hover:text-primary transition-colors">{campaign.title}</h3>
                           <p className="text-sm text-muted-foreground">
                             Track contributions in real-time. BTC + M-Pesa supported.
                           </p>
@@ -154,7 +153,7 @@ const Dashboard = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => copyLink(link.slug)}
+                          onClick={() => copyLink(campaign.slug)}
                           className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         >
                           <Copy className="h-4 w-4" />
@@ -180,9 +179,12 @@ const Dashboard = () => {
                       <div>
                         <p className="text-sm text-muted-foreground mb-2">Payment Link</p>
                         <div className="bg-muted/30 rounded-lg px-4 py-3 flex items-center justify-between">
-                          <p className="text-sm font-medium text-primary">
-                            crowdpay.me/{link.slug}
-                          </p>
+                          <Link 
+                            to={`/c/${campaign.slug}`} 
+                            className="text-sm font-medium text-primary truncate hover:underline transition-colors"
+                          >
+                            {window.location.origin}/c/{campaign.slug}
+                          </Link>
                         </div>
                       </div>
 
