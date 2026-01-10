@@ -41,7 +41,7 @@ const SignIn = () => {
 
     toast({
       title: "Welcome back!",
-      description: "This is a UI demo. All data is mock data.",
+      description: "You’re among the first to see this as we continue development.",
     });
     
     navigate("/app");

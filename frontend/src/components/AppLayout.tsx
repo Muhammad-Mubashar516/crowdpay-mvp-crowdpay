@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { TopNavbar } from "@/components/TopNavbar";
 import { useAuth } from "@/contexts/MockAuthContext";
 
 interface AppLayoutProps {
@@ -14,7 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/signin");
+      navigate("/auth");
     }
   }, [user, loading, navigate]);
 
@@ -35,8 +36,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center px-4 bg-background">
+          <header className="h-14 border-b flex items-center justify-between px-4 bg-background">
             <SidebarTrigger />
+            <TopNavbar />
           </header>
           <main className="flex-1 overflow-auto">
             {children}
