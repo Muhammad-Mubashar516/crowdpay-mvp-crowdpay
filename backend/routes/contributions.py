@@ -3,6 +3,8 @@ from datetime import datetime
 import logging
 
 import supabase
+
+from services.auth import optional_auth, require_auth
 from . import contributions_bp
 from models import Contribution
 from services import get_supabase_client, BitnobService, InvoicePollingService
@@ -16,6 +18,7 @@ polling_service = InvoicePollingService()
 
 
 @contributions_bp.route('', methods=['POST'])
+@optional_auth
 def create_contribution():
     """Create a new contribution and generate payment invoice"""
     try:
@@ -49,12 +52,26 @@ def create_contribution():
             # Generate unique reference
             import uuid
             reference = f"contrib_{uuid.uuid4().hex[:12]}"
+            contribution.bitnob_reference = reference
+
+            # Map currency to Bitnob payment function
+            PAYMENT_METHODS = {
+                'USD': bitnob_service.create_checkout,
+                'BTC': bitnob_service.create_lightning_address_payment,
+                'SATS': bitnob_service.create_lightning_address_payment,
+                'KSH': bitnob_service.create_checkout
+            }
+
+            payment_func = PAYMENT_METHODS.get(contribution.currency)
+            if not payment_func:
+                return jsonify({'error': 'Unsupported currency'}), 400
             
             # Determine payment method based on currency
             if contribution.currency in ['BTC', 'SATS']:
-                # Use Lightning Network for Bitcoin
-                payment_data = bitnob_service.create_lightning_address_payment(
-                    amount=contribution.amount if contribution.currency == 'SATS' else contribution.amount * 100000000,
+                # Lightning networj amount conversion for BTC
+                amount = contribution.amount if contribution.currency == 'SATS' else contribution.amount  * 100_000_000
+                payment_data = payment_func(
+                    amount=amount,
                     description=f"Contribution to {campaign.get('title')}",
                     customer_email=contribution.contributor_email,
                     reference=reference
@@ -65,7 +82,7 @@ def create_contribution():
                 contribution.bitnob_payment_hash = payment_data['payment_hash']
             else:
                 # Use checkout for fiat currencies
-                payment_data = bitnob_service.create_checkout(
+                payment_data = payment_func(
                     amount=contribution.amount,
                     currency=contribution.currency,
                     description=f"Contribution to {campaign.get('title')}",
@@ -76,46 +93,45 @@ def create_contribution():
                 contribution.bitnob_payment_id = payment_data['checkout_id']
                 contribution.bitnob_payment_request = payment_data['checkout_url']
             
-            contribution.bitnob_reference = reference
+            # Handle anonymous contributions
+            if contribution.is_anonymous:
+                contribution.contributor_name = None
+                contribution.contributor_email = None
             
+            # insert contribution into database
+            contrib_data = contribution.to_dict()
+            contrib_data.pop('id', None)
+
+            response = supabase.table('contributions').insert(contrib_data).execute()
+            if not response.data:
+                return jsonify({'error': 'Failed to create contribution'}), 500
+            
+            created_contribution = Contribution.from_dict(response.data[0])
+
+            # Start polling for payment
+            polling_service.start_polling(
+                contribution_id=created_contribution.id,
+                payment_id=created_contribution.bitnob_payment_id,
+                campaign_id=campaign_id
+            )
+
+            logger.info(f"Contribution created: {created_contribution.id}")
+            return jsonify({
+                'message': 'Contribution created successfully',
+                'contribution': created_contribution.dict(),
+                'payment_request': created_contribution.bitnob_payment_request
+            }), 201
         except BitnobAPIError as e:
-            logger.error(f"Bitnob API error: {str(e)}")
-            return jsonify({'error': 'Failed to create payment'}), 500
-        
-        # Insert contribution into database
-        contrib_data = contribution.to_dict()
-        contrib_data.pop('id', None)
-        
-        response = supabase.table('contributions').insert(contrib_data).execute()
-        
-        if not response.data:
-            return jsonify({'error': 'Failed to create contribution'}), 500
-        
-        created_contribution = Contribution.from_dict(response.data[0])
-        
-        # Start polling for payment
-        polling_service.start_polling(
-            contribution_id=created_contribution.id,
-            payment_id=created_contribution.bitnob_payment_id,
-            campaign_id=campaign_id
-        )
-        
-        logger.info(f"Contribution created: {created_contribution.id}")
-        
-        return jsonify({
-            'message': 'Contribution created successfully',
-            'contribution': created_contribution.dict(),
-            'payment_request': created_contribution.bitnob_payment_request
-        }), 201
-        
-    except ValidationError as e:
-        logger.error(f"Validation error: {str(e)}")
-        return jsonify({'error': 'Validation error', 'details': e.errors()}), 400
+            logger.error(f"Error creating Bitnob payment: {str(e)}")
+            return jsonify({'error': 'Payment processing error'}), 400
+        except ValidationError as e:
+            return jsonify({'error': 'Validation error', 'details': e.errors()}), 400
     except Exception as e:
         logger.error(f"Error creating contribution: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @contributions_bp.route('/<contribution_id>', methods=['GET'])
+@optional_auth
 def get_contribution(contribution_id):
     """Get a specific contribution by ID"""
     try:
@@ -141,6 +157,7 @@ def get_contribution(contribution_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @contributions_bp.route('/<contribution_id>/status', methods=['GET'])
+@optional_auth
 def check_contribution_status(contribution_id):
     """Check the payment status of a contribution"""
     try:
@@ -191,6 +208,7 @@ def check_contribution_status(contribution_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @contributions_bp.route('/<contribution_id>/cancel', methods=['POST'])
+@require_auth
 def cancel_contribution(contribution_id):
     """Cancel a pending contribution"""
     try:
@@ -232,6 +250,7 @@ def cancel_contribution(contribution_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @contributions_bp.route('', methods=['GET'])
+@optional_auth
 def get_contributions():
     """Get all contributions with optional filtering"""
     try:
@@ -275,6 +294,7 @@ def get_contributions():
         return jsonify({'error': 'Internal server error'}), 500
 
 @contributions_bp.route('/webhook', methods=['POST'])
+@optional_auth
 def bitnob_webhook():
     """Webhook endpoint for Bitnob payment notifications"""
     try:
@@ -336,7 +356,7 @@ def bitnob_webhook():
                 new_amount = current_amount + amount
                 
                 supabase.table('campaigns').update({
-                    'current_amount': new_amount,
+                    'current_amount': supabase.raw(f'current_amount + %s', (amount,)),
                     'updated_at': datetime.now().isoformat()
                 }).eq('id', campaign_id).execute()
             

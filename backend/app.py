@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import logging
 from config import Config
-from routes import campaigns_bp, contributions_bp
+from routes import campaigns_bp, contributions_bp , auth_bp
 
 # Configure logging
 logging.basicConfig(
@@ -31,6 +31,7 @@ def create_app():
     # Register blueprints
     app.register_blueprint(campaigns_bp)
     app.register_blueprint(contributions_bp)
+    app.register_blueprint(auth_bp)
     
     # Health check endpoint
     @app.route('/health', methods=['GET'])

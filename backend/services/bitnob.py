@@ -5,6 +5,7 @@ import hashlib
 from typing import Dict, Any, Optional
 from config import Config
 
+
 logger = logging.getLogger(__name__)
 
 class BitnobAPIError(Exception):
@@ -146,7 +147,7 @@ class BitnobService:
             logger.info(f"Creating Bitnob checkout for {amount} {currency}")
             
             response = self.session.post(
-                f'{self.api_url}/api/v1/checkouts',
+                f'{self.api_url}/api/v1/checkout',
                 json=payload,
                 timeout=30
             )

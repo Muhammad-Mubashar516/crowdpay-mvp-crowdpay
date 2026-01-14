@@ -4,6 +4,7 @@ import logging
 from . import campaigns_bp
 from models import Campaign
 from services import get_supabase_client
+from services.auth import optional_auth, require_auth
 from pydantic import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -11,6 +12,7 @@ supabase = get_supabase_client()
 
 
 @campaigns_bp.route('', methods=['POST'])
+@require_auth
 def create_campaign():
     """Create a new campaign"""
     try:
@@ -18,6 +20,10 @@ def create_campaign():
         
         if not data:
             return jsonify({'error': 'No data provided'}), 400
+        
+        # Add creator_id from authenticated user
+        data['creator_id'] = request.user['id']
+        data['creator_email'] = request.user['email']
         
         # Validate and create campaign model
         campaign = Campaign(**data)
@@ -50,6 +56,7 @@ def create_campaign():
         return jsonify({'error': 'Internal server error'}), 500
 
 @campaigns_bp.route('', methods=['GET'])
+@optional_auth
 def get_campaigns():
     """Get all campaigns with optional filtering"""
     try:
@@ -87,6 +94,7 @@ def get_campaigns():
         return jsonify({'error': 'Internal server error'}), 500
 
 @campaigns_bp.route('/<campaign_id>', methods=['GET'])
+@optional_auth
 def get_campaign(campaign_id):
     """Get a specific campaign by ID"""
     try:
@@ -125,6 +133,7 @@ def get_campaign(campaign_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @campaigns_bp.route('/<campaign_id>', methods=['PUT'])
+@require_auth
 def update_campaign(campaign_id):
     """Update a campaign"""
     try:
@@ -137,9 +146,12 @@ def update_campaign(campaign_id):
         existing = supabase.table('campaigns').select('*').eq(
             'id', campaign_id
         ).single().execute()
-        
         if not existing.data:
             return jsonify({'error': 'Campaign not found'}), 404
+        
+        # Verify ownership
+        if existing.data['creator_id'] != request.user['id']:
+            return jsonify({'error': 'Unauthorized'}), 403
         
         # Update only allowed fields
         allowed_fields = [
@@ -149,21 +161,23 @@ def update_campaign(campaign_id):
         update_data = {
             k: v for k, v in data.items() if k in allowed_fields
         }
+        if not update_data:
+            return jsonify({'error': 'No valid fields to update'}), 400
         
         update_data['updated_at'] = datetime.now().isoformat()
-        
-        # Validate with pydantic
+
+        # Merge with existing data to validate
         campaign_data = {**existing.data, **update_data}
-        Campaign(**campaign_data)  # Validation
+        campaign = Campaign(**campaign_data)    
         
-        response = supabase.table('campaigns').update(update_data).eq(
-            'id', campaign_id
-        ).execute()
-        
-        updated_campaign = Campaign.from_dict(response.data[0])
-        
-        logger.info(f"Campaign updated: {campaign_id}")
-        
+        # Update in database
+        response =supabase.table('campaigns').update(
+            update_data
+        ).eq('id', campaign_id).execute()
+
+        updated_campaign = Campaign.from_dict(response.data[0])  
+        logger.info(f"Campaign updated: {campaign_id}") 
+
         return jsonify({
             'message': 'Campaign updated successfully',
             'campaign': updated_campaign.dict()
@@ -177,6 +191,7 @@ def update_campaign(campaign_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @campaigns_bp.route('/<campaign_id>', methods=['DELETE'])
+@require_auth
 def delete_campaign(campaign_id):
     """Delete a campaign (soft delete by changing status)"""
     try:
@@ -203,6 +218,7 @@ def delete_campaign(campaign_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 @campaigns_bp.route('/<campaign_id>/contributions', methods=['GET'])
+@optional_auth
 def get_campaign_contributions(campaign_id):
     """Get all contributions for a campaign"""
     try:

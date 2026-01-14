@@ -31,7 +31,7 @@ class Contribution(BaseModel):
     
     @validator('currency')
     def validate_currency(cls, v):
-        allowed_currencies = ['USD', 'BTC', 'SATS']
+        allowed_currencies = ['USD', 'BTC', 'SATS', 'KSH']
         if v not in allowed_currencies:
             raise ValueError(f"Currency must be one of {allowed_currencies}")
         return v

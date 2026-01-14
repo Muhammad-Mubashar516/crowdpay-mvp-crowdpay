@@ -7,12 +7,12 @@ class Campaign(BaseModel):
     """Campaign model for fundraising events"""
     
     id: Optional[str] = None
+    creator_id: str = Field(..., min_length=3, max_length=50)
     title: str = Field(..., min_length=3, max_length=200)
     description: str = Field(..., min_length=10, max_length=2000)
     target_amount: float = Field(..., gt=0)
     current_amount: float = Field(default=0.0, ge=0)
     currency: str = Field(default="USD")
-    creator_id: str = Field(..., min_length=1)
     creator_email: Optional[str] = None
     status: str = Field(default="active")
     end_date: Optional[datetime] = None
