@@ -80,7 +80,7 @@ export const NavBar = ({ variant = "landing" }: NavBarProps) => {
                       <Link to="/app">Dashboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/create">Create Campaign</Link>
+                      <Link to="/create">Create Event</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={signOut} className="text-destructive">

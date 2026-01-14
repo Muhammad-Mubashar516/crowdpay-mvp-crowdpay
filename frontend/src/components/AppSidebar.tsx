@@ -29,12 +29,22 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const mainItems = [
   { title: "Dashboard", url: "/app", icon: Home },
-  { title: "Explore Events", url: "/explore", icon: Compass },
-  { title: "My Events", url: "/my-links", icon: Link2 },
-  { title: "Create Event", url: "/create", icon: Plus },
+  { title: "My Links", url: "/my-links", icon: Link2 },
+  { title: "Create Link", url: "/create", icon: Plus },
   { title: "Contributions", url: "/contributions", icon: Heart },
   { title: "Wallet", url: "/wallet", icon: Wallet },
   { title: "Notifications", url: "/notifications", icon: Bell },
@@ -68,12 +78,12 @@ export function AppSidebar() {
       className={isCollapsed ? "w-14" : "w-56"}
       collapsible="icon"
     >
-      <SidebarContent className="bg-primary text-primary-foreground">
+      <SidebarContent className="bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
         {/* Logo */}
         <div className="p-4 flex items-center gap-2">
           <img src={logo} alt="Crowd Pay" className="h-8 w-8" />
           {!isCollapsed && (
-            <span className="font-bold text-lg text-primary-foreground">Crowd Pay</span>
+            <span className="font-bold text-lg text-sidebar-foreground">Crowd Pay</span>
           )}
         </div>
 
@@ -87,8 +97,8 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/app"}
-                      className="text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                      activeClassName="bg-primary-foreground text-primary font-medium"
+                      className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-medium"
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span className="ml-3">{item.title}</span>}
@@ -101,14 +111,14 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Bottom Section */}
-        <SidebarGroup className="mt-auto border-t border-primary-foreground/20">
+        <SidebarGroup className="mt-auto border-t border-sidebar-border">
           <SidebarGroupContent className="py-4">
             <SidebarMenu>
               {/* Light/Dark Mode Toggle */}
               {!isCollapsed && mounted && (
                 <SidebarMenuItem>
                   <div className="flex items-center justify-between px-3 py-2">
-                    <div className="flex items-center gap-2 text-primary-foreground/80">
+                    <div className="flex items-center gap-2 text-sidebar-foreground/80">
                       {resolvedTheme === "dark" ? (
                         <Moon className="h-4 w-4" />
                       ) : (
@@ -119,7 +129,7 @@ export function AppSidebar() {
                     <Switch
                       checked={resolvedTheme === "light"}
                       onCheckedChange={toggleTheme}
-                      className="data-[state=checked]:bg-primary-foreground/30"
+                      className="data-[state=checked]:bg-sidebar-foreground/30"
                     />
                   </div>
                 </SidebarMenuItem>
@@ -127,13 +137,34 @@ export function AppSidebar() {
 
               {/* Logout Button */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleLogout}
-                  className="text-primary-foreground/80 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                >
-                  <LogOut className="h-4 w-4" />
-                  {!isCollapsed && <span className="ml-3">Logout</span>}
-                </SidebarMenuButton>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <SidebarMenuButton
+                      className="text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      {!isCollapsed && <span className="ml-3">Logout</span>}
+                    </SidebarMenuButton>
+                  </AlertDialogTrigger>
+
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Are you sure you want to sign out?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        You will be redirected to the home page and will need to sign in again to access your account.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleLogout}>
+                        Sign Out
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +34,7 @@ export const AddContributionDialog = ({ campaignId }: AddContributionDialogProps
     contributor_name: "",
     amount: "",
     payment_method: "mpesa" as "mpesa" | "bitcoin",
+    is_anonymous: false,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +44,7 @@ export const AddContributionDialog = ({ campaignId }: AddContributionDialogProps
     try {
       const { error } = await supabase.from("contributions").insert({
         campaign_id: campaignId,
-        contributor_name: formData.contributor_name,
+        contributor_name: formData.is_anonymous ? "Anonymous" : formData.contributor_name,
         amount: parseFloat(formData.amount),
         payment_method: formData.payment_method,
       });
@@ -59,6 +61,7 @@ export const AddContributionDialog = ({ campaignId }: AddContributionDialogProps
         contributor_name: "",
         amount: "",
         payment_method: "mpesa",
+        is_anonymous: false,
       });
     } catch (error: any) {
       toast({
@@ -92,11 +95,29 @@ export const AddContributionDialog = ({ campaignId }: AddContributionDialogProps
             <Label htmlFor="contributor_name">Contributor Name *</Label>
             <Input
               id="contributor_name"
-              placeholder="e.g., John Doe or Anonymous"
+              placeholder="e.g., John Doe"
               value={formData.contributor_name}
               onChange={(e) => setFormData({ ...formData, contributor_name: e.target.value })}
-              required
+              required={!formData.is_anonymous}
+              disabled={formData.is_anonymous}
+              className={formData.is_anonymous ? "opacity-50" : ""}
             />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is_anonymous"
+              checked={formData.is_anonymous}
+              onCheckedChange={(checked) => 
+                setFormData({ ...formData, is_anonymous: checked as boolean })
+              }
+            />
+            <Label 
+              htmlFor="is_anonymous" 
+              className="text-sm font-normal cursor-pointer"
+            >
+              Donate anonymously
+            </Label>
           </div>
 
           <div className="space-y-2">

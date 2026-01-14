@@ -1,47 +1,40 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/MockAuthContext";
+import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Bitcoin, Copy, TrendingUp, Link2 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
-import { mockCampaigns } from "@/data/mockCampaigns";
-
-interface Campaign {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  goal_amount: number;
-  total_raised?: number;
-  contributions_count?: number;
-}
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { getUserCampaigns } = useCampaigns();
   const [btcBalance] = useState(0.0234);
   
-  // Use mock data filtered for current user
-  const campaigns = mockCampaigns
-    .filter(c => c.user_id === user?.id)
-    .map(c => ({
+  // Use campaigns from context filtered for current user
+  const campaigns = getUserCampaigns(user?.id || "").map(c => {
+    const contributions = mockContributions.filter(cont => cont.campaign_id === c.id);
+    const total_raised = contributions.reduce((sum, cont) => sum + cont.amount, 0);
+    return {
       id: c.id,
       title: c.title,
       slug: c.slug,
       description: c.description,
       goal_amount: c.goal_amount,
-      total_raised: c.total_raised,
-      contributions_count: c.contributions_count,
-    }));
+      total_raised,
+      contributions_count: contributions.length,
+    };
+  });
 
   const totalRaised = campaigns.reduce((sum, c) => sum + (c.total_raised || 0), 0);
 
   const copyLink = (slug: string) => {
-    const link = `crowdpay.me/${slug}`;
+    const link = `${window.location.origin}/c/${slug}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copied!",
@@ -186,9 +179,12 @@ const Dashboard = () => {
                       <div>
                         <p className="text-sm text-muted-foreground mb-2">Payment Link</p>
                         <div className="bg-muted/30 rounded-lg px-4 py-3 flex items-center justify-between">
-                          <p className="text-sm font-medium text-primary">
-                            crowdpay.me/{campaign.slug}
-                          </p>
+                          <Link 
+                            to={`/c/${campaign.slug}`} 
+                            className="text-sm font-medium text-primary truncate hover:underline transition-colors"
+                          >
+                            {window.location.origin}/c/{campaign.slug}
+                          </Link>
                         </div>
                       </div>
 

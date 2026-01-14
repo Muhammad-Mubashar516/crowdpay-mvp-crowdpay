@@ -8,10 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { Helmet } from "react-helmet-async";
 import logo from "@/assets/logo.png";
+import { Eye, EyeOff } from "lucide-react";
 
-const Auth = () => {
+const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, user, loading } = useAuth();
@@ -97,15 +99,24 @@ const Auth = () => {
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <Label className="text-sm font-medium mb-2 block">Password</Label>
                 <Input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <button
+                  type="button"
+                  className="absolute right-3 top-9 text-muted-foreground"
+                  tabIndex={-1}
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
 
               <Button type="submit" className="w-full">
@@ -154,4 +165,5 @@ const Auth = () => {
     </>
   );
 };
-export default Auth;
+
+export default SignIn;

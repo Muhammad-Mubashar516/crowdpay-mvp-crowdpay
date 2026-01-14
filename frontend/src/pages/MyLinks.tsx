@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
@@ -34,7 +34,7 @@ const MyLinks = () => {
     });
 
   const copyLink = (slug: string) => {
-    const link = `crowdpay.me/c/${slug}`;
+    const link = `http://localhost:8080/c/${slug}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link copied!",
@@ -101,7 +101,9 @@ const MyLinks = () => {
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 space-y-4">
                         <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-lg">{campaign.title}</h3>
+                          <Link to={`/c/${campaign.slug}`} className="font-semibold text-lg hover:text-primary hover:underline transition-colors">
+                            {campaign.title}
+                          </Link>
                           <Badge variant="outline" className={getModeColor(campaign.mode)}>
                             {campaign.mode}
                           </Badge>
@@ -130,7 +132,7 @@ const MyLinks = () => {
                         <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
                           <span className="text-sm text-muted-foreground">Link:</span>
                           <span className="text-sm font-medium text-primary flex-1 truncate">
-                            crowdpay.me/c/{campaign.slug}
+                            http://localhost:8080/c/{campaign.slug}
                           </span>
                           <Button
                             variant="ghost"

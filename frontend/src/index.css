@@ -36,32 +36,48 @@ All colors MUST be HSL.
     --bitcoin-orange: 25 98% 54%;
     --mpesa-green: 142 71% 45%;
     --dark-navy: 220 39% 11%;
+    --sidebar-background: 17 100% 59%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 17 100% 59%;
+    --sidebar-accent: 17 100% 65%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 17 100% 50%;
+    --sidebar-ring: 17 100% 59%;
   }
   .dark {
-    --background: 220 20% 14%;
+    --background: 220 15% 18%;
     --foreground: 210 40% 98%;
-    --card: 220 20% 18%;
+    --card: 220 15% 22%;
     --card-foreground: 210 40% 98%;
-    --popover: 220 20% 16%;
+    --popover: 220 15% 20%;
     --popover-foreground: 210 40% 98%;
     --primary: 17 100% 59%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 18% 24%;
+    --secondary: 220 14% 28%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 220 18% 22%;
-    --muted-foreground: 215 20% 70%;
-    --accent: 220 18% 26%;
+    --muted: 220 14% 26%;
+    --muted-foreground: 215 20% 75%;
+    --accent: 220 14% 30%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 45%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 18% 28%;
-    --input: 220 18% 24%;
+    --border: 220 14% 32%;
+    --input: 220 14% 28%;
     --ring: 17 100% 59%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --sidebar-background: 220 15% 14%;
+    --sidebar-foreground: 210 40% 95%;
+    --sidebar-primary: 17 100% 59%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 22%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 14% 24%;
+    --sidebar-ring: 17 100% 59%;
   }
 }
 

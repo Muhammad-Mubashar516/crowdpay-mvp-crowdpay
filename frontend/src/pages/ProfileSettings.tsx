@@ -10,13 +10,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Helmet } from "react-helmet-async";
 import { Loader2, User, Wallet, Shield, Bell, Zap, Bitcoin } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const ProfileSettings = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-
+  
   // Mock profile data
   const [username, setUsername] = useState("demo_user");
   const [fullName, setFullName] = useState("Demo User");
@@ -35,13 +46,24 @@ const ProfileSettings = () => {
 
     toast({
       title: "Success!",
-      description: "Your profile has been updated (demo mode).",
+      description: "Your profile has been updated.",
     });
-
+    
     setLoading(false);
   };
 
   const handleSignOut = () => {
+    signOut();
+    navigate("/");
+  };
+
+  const handleDeleteAccount = () => {
+    // In demo mode, just sign out and show toast
+    toast({
+      title: "Account deleted",
+      description: "Your account has been deleted.",
+      variant: "destructive",
+    });
     signOut();
     navigate("/");
   };
@@ -216,9 +238,9 @@ const ProfileSettings = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button
-              type="submit"
-              disabled={loading}
+            <Button 
+              type="submit" 
+              disabled={loading} 
               className="flex-1 bg-primary hover:bg-primary/90"
             >
               {loading ? (
@@ -230,14 +252,29 @@ const ProfileSettings = () => {
                 "Save Changes"
               )}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSignOut}
-              className="flex-1"
-            >
-              Sign Out
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="flex-1"
+                >
+                  Sign Out
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    You will be redirected to the home page and will need to sign in again to access your account.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </form>
 
@@ -255,9 +292,30 @@ const ProfileSettings = () => {
                   Permanently delete your account and all data
                 </p>
               </div>
-              <Button variant="destructive" size="sm">
-                Delete Account
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
+                    Delete Account
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to delete your account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action is irreversible. All your data, events, and contributions will be permanently deleted and cannot be recovered.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDeleteAccount}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Delete Account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </CardContent>
         </Card>

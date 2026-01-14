@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { useCampaigns } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,16 @@ import { Helmet } from "react-helmet-async";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { QRCodeSVG } from "qrcode.react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const categoryLabels: Record<string, { label: string; emoji: string }> = {
   education: { label: "Education", emoji: "🎓" },
@@ -36,7 +46,7 @@ const CreateCampaign = () => {
   const { addCampaign } = useCampaigns();
   const [loading, setLoading] = useState(false);
   const [coverImagePreview, setCoverImagePreview] = useState<string>("");
-  
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -49,6 +59,7 @@ const CreateCampaign = () => {
     is_public: true,
     event_location: "",
   });
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // Auto-generate slug from title
   useEffect(() => {
@@ -80,10 +91,15 @@ const CreateCampaign = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    setShowConfirmDialog(true);
+  };
 
+  const handleConfirmCreate = async () => {
+    if (!user) return;
+    setShowConfirmDialog(false);
     setLoading(true);
 
     // Create new campaign and add to context
@@ -117,11 +133,11 @@ const CreateCampaign = () => {
     setLoading(false);
   };
 
-  const campaignUrl = `crowdpay.me/${formData.slug || "your-campaign"}`;
-  const fullUrl = `https://${campaignUrl}`;
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const campaignUrl = `${baseUrl}/c/${formData.slug || "your-campaign"}`;
 
   const copyLink = () => {
-    navigator.clipboard.writeText(fullUrl);
+    navigator.clipboard.writeText(campaignUrl);
     toast({
       title: "Link copied!",
       description: "Share it with your supporters",
@@ -147,20 +163,19 @@ const CreateCampaign = () => {
         <title>Create Event - CrowdPay</title>
         <meta name="description" content="Create a new fundraising event with Bitcoin and M-Pesa support" />
       </Helmet>
-      
+
       <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8 max-w-6xl mx-auto">
+          <div>
+            <h1 className="text-2xl font-bold">Create New Event</h1>
+            <p className="text-muted-foreground">Set up your fundraising event with full customization</p>
+          </div>
+        </div>
         <div className="grid lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {/* Form Section */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Create New Event</CardTitle>
-              <CardDescription>
-                Set up your fundraising event with full customization
-              </CardDescription>
-            </CardHeader>
-            
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleFormSubmit} className="space-y-6">
                 {/* Cover Image */}
                 <div className="space-y-2">
                   <Label>Cover Image</Label>
@@ -218,7 +233,7 @@ const CreateCampaign = () => {
                 <div className="space-y-2">
                   <Label htmlFor="slug">Event URL</Label>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">crowdpay.me/</span>
+                    <span className="text-sm text-muted-foreground">{baseUrl}/c/</span>
                     <Input
                       id="slug"
                       placeholder="my-campaign"
@@ -495,7 +510,7 @@ const CreateCampaign = () => {
                     <div className="flex justify-center">
                       <div className="bg-white p-3 rounded-lg shadow-sm">
                         <QRCodeSVG
-                          value={fullUrl}
+                          value={campaignUrl}
                           size={140}
                           level="M"
                           fgColor={formData.theme_color}
@@ -511,9 +526,13 @@ const CreateCampaign = () => {
                   <div className="p-3 bg-muted/50 rounded-lg space-y-2">
                     <p className="text-xs text-muted-foreground font-medium">Event Link</p>
                     <div className="flex items-center gap-2">
-                      <code className="flex-1 text-sm font-mono bg-background px-3 py-2 rounded border truncate">
+                      <Link
+                        to={`/c/${formData.slug || "your-campaign"}`}
+                        target="_blank"
+                        className="flex-1 text-sm font-mono bg-background px-3 py-2 rounded border truncate hover:text-primary hover:underline transition-colors"
+                      >
                         {campaignUrl}
-                      </code>
+                      </Link>
                       <Button size="sm" variant="outline" onClick={copyLink}>
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -563,6 +582,29 @@ const CreateCampaign = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create this event?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Please cross-check all entered information before proceeding:</p>
+              <ul className="list-disc list-inside text-sm space-y-1 mt-2">
+                <li><strong>Title:</strong> {formData.title || "Not set"}</li>
+                <li><strong>Category:</strong> {formData.category}</li>
+                <li><strong>Goal:</strong> {formData.goal_amount ? `KES ${formData.goal_amount}` : "No goal set"}</li>
+                <li><strong>Type:</strong> {formData.mode}</li>
+                <li><strong>Visibility:</strong> {formData.is_public ? "Public" : "Private"}</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Review Details</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmCreate}>Create Event</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -2,9 +2,11 @@
 
 A Kenya-focused crowdfunding platform that bridges M-Pesa and Bitcoin/Lightning Network, enabling seamless fundraising with multiple payment options.
 
+🔗 **Live Demo**: [https://crowdpay.netlify.app/](https://crowdpay.netlify.app/)
+
 ## Overview
 
-CrowdPay allows users to create customizable fundraising campaigns that accept both local currency (KES via M-Pesa) and Bitcoin (Lightning & On-chain). Campaign creators receive instant Bitcoin settlement while contributors can pay using their preferred method.
+CrowdPay allows users to create customizable fundraising events that accept both local currency (KES via M-Pesa) and Bitcoin (Lightning & On-chain). Event creators receive instant Bitcoin settlement while contributors can pay using their preferred method.
 
 ## Tech Stack
 
@@ -13,8 +15,8 @@ CrowdPay allows users to create customizable fundraising campaigns that accept b
 - **Routing**: React Router v6
 - **State Management**: TanStack Query (React Query)
 - **Animations**: Framer Motion
-- **Backend**: Supabase (PostgreSQL, Auth, Edge Functions, Storage)
-- **Bitcoin**: Blink API (Lightning Network integration)
+- **Backend**: Flask Python
+- **Bitcoin**: Bitnob API (Lightning Network integration)
 
 ## Project Structure
 
@@ -80,23 +82,6 @@ public/
 └── placeholder.svg
 ```
 
-## Database Schema
-
-### Tables
-
-- **campaigns**: Stores fundraising campaigns
-  - `id`, `title`, `description`, `goal_amount`, `mode`, `category`
-  - `slug` (custom URL), `cover_image_url`, `theme_color`
-  - `is_public`, `end_date`, `user_id`
-
-- **contributions**: Records all donations
-  - `id`, `campaign_id`, `amount`, `contributor_name`
-  - `payment_method`, `user_id`
-
-- **profiles**: User profile information
-  - `id`, `username`, `full_name`, `avatar_url`
-  - `lightning_address`, `onchain_address`, `bitcoin_wallet_type`
-
 ## Key Features
 
 ### Campaign Modes
@@ -105,11 +90,11 @@ public/
 - **Mode C (Activism)**: Privacy-focused with anonymous donations
 
 ### Payment Options
-- M-Pesa (KES) with automatic BTC conversion via Minmo
+- M-Pesa (KES) with automatic BTC conversion via Bitnob API
 - Bitcoin Lightning Network (instant)
 - Bitcoin On-chain
 
-### Campaign Features
+### Event Features
 - Custom slugs (crowdpay.me/your-campaign)
 - Cover images and theme colors
 - Category filtering and search
@@ -148,10 +133,11 @@ The app uses a consistent design system defined in:
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/DadaDevelopers/crowdpay-mvp-crowdpay
 
 # Navigate to project directory
-cd crowdpay
+cd crowdpay-mvp-crowdpay
+
 
 # Install dependencies
 npm install
@@ -160,16 +146,7 @@ npm install
 npm run dev
 ```
 
-### Environment Variables
-
-Create a `.env` file with:
-```
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
-VITE_SUPABASE_PROJECT_ID=your_project_id
-```
-
-## Scripts
+### Scripts
 
 ```bash
 npm run dev      # Start development server

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Smartphone, Zap, Copy, Check } from "lucide-react";
+import { X, Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import {
   Dialog,
@@ -13,6 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useBtcRate, kesToSats } from "@/hooks/useBtcRate";
+import mpesaLogo from "@/assets/mpesa-logo.png";
+import bitcoinLogo from "@/assets/bitcoin-logo.png";
 
 interface PaymentModalProps {
   open: boolean;
@@ -24,9 +27,10 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
   const [amount, setAmount] = useState("1000");
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
+  const { kesToSats: kesToSatsRate, btcToKes, loading: rateLoading } = useBtcRate();
 
   const kesAmount = parseInt(amount) || 0;
-  const satAmount = Math.round(kesAmount * 12); // Simplified conversion
+  const satAmount = kesAmount > 0 ? kesToSats(kesAmount, kesToSatsRate) : 0;
   const lightningInvoice = "lnbc10u1pjdkv7qpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdqqcqzpgxqyz5vqsp5zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3zyg3s9q";
 
   const handleCopy = () => {
@@ -72,12 +76,24 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
 
         <Tabs defaultValue="mpesa" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="mpesa" className="gap-2">
-              <Smartphone className="w-4 h-4" />
+            <TabsTrigger value="mpesa" className="gap-2 group">
+              <motion.img 
+                src={mpesaLogo} 
+                alt="M-Pesa" 
+                className="w-5 h-5 rounded-sm object-cover"
+                whileHover={{ scale: 1.2, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              />
               M-Pesa
             </TabsTrigger>
-            <TabsTrigger value="bitcoin" className="gap-2">
-              <Zap className="w-4 h-4" />
+            <TabsTrigger value="bitcoin" className="gap-2 group">
+              <motion.img 
+                src={bitcoinLogo} 
+                alt="Bitcoin" 
+                className="w-5 h-5"
+                whileHover={{ scale: 1.2, rotate: -5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              />
               Bitcoin
             </TabsTrigger>
           </TabsList>
@@ -117,15 +133,28 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
                 </motion.span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Live rate: 1 KES ≈ 12 Sats
+                {rateLoading ? (
+                  "Loading live rate..."
+                ) : (
+                  `Live rate: 1 KES ≈ ${kesToSatsRate.toFixed(2)} Sats (1 BTC = ${btcToKes.toLocaleString()} KES)`
+                )}
               </p>
             </div>
 
             <Button 
               onClick={handleMpesaPay}
-              className="w-full bg-mpesa hover:bg-mpesa/90 text-mpesa-foreground"
+              className="w-full bg-mpesa hover:bg-mpesa/90 text-mpesa-foreground gap-2 group"
               size="lg"
             >
+              <motion.img 
+                src={mpesaLogo} 
+                alt="M-Pesa" 
+                className="w-5 h-5 rounded-sm object-cover"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.95 }}
+                animate={{ rotate: [0, 0] }}
+                transition={{ type: "spring", stiffness: 300 }}
+              />
               Pay with M-Pesa
             </Button>
           </TabsContent>
@@ -199,9 +228,17 @@ export const PaymentModal = ({ open, onClose }: PaymentModalProps) => {
                   description: "Listening for Lightning payment...",
                 });
               }}
-              className="w-full bg-bitcoin hover:bg-bitcoin/90 text-bitcoin-foreground"
+              className="w-full bg-bitcoin hover:bg-bitcoin/90 text-bitcoin-foreground gap-2 group"
               size="lg"
             >
+              <motion.img 
+                src={bitcoinLogo} 
+                alt="Bitcoin" 
+                className="w-5 h-5"
+                whileHover={{ scale: 1.15, rotate: 360 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              />
               I've Paid
             </Button>
           </TabsContent>
