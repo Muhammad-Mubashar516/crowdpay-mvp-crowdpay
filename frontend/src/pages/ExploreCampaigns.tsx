@@ -48,6 +48,7 @@ const categoryLabels: Record<string, { label: string; emoji: string }> = {
 };
 
 export default function ExploreCampaigns() {
+    // ...existing code...
   const [filteredLinks, setFilteredLinks] = useState<Link[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -126,6 +127,9 @@ export default function ExploreCampaigns() {
       </Helmet>
 
       <div className="container mx-auto p-6 max-w-7xl">
+        <div className="mb-6 flex justify-end">
+          <Button variant="outline" onClick={() => navigate("/")}>Back to Home</Button>
+        </div>
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">Explore Events</h1>
           <p className="text-muted-foreground">

@@ -136,7 +136,7 @@ const Landing = () => {
   return (
     <>
       <Helmet>
-        <title>CrowdPay - Hybrid Bitcoin & M-Pesa Fundraising Platform</title>
+        <title>CrowdPay - Hybrid Bitcoin & M-Pesa Events Fundraising Platform</title>
         <meta name="description" content="Accept contributions in Bitcoin and M-Pesa. Receive BTC instantly." />
       </Helmet>
 
@@ -152,9 +152,11 @@ const Landing = () => {
             style={{ backgroundImage: `url(${s.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
           />
         ))}
-        
+
         <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80" />
-        
+
+        {/* Top left description removed for main hero use */}
+
         {/* Navbar */}
         <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 bg-black/30 backdrop-blur-md border-b border-white/10">
           <div className="container mx-auto flex justify-between items-center">
@@ -163,8 +165,16 @@ const Landing = () => {
               <span className="font-bold text-xl sm:text-2xl text-white">CrowdPay</span>
             </div>
             <div className="hidden md:flex gap-8">
-              {["Features", "How it Works", "Browse Events"].map((item) => (
-                <a key={item} href={item === "Browse Events" ? "/explore" : `#${item.toLowerCase().replace(/ /g, '-')}`} className="text-sm text-white/80 hover:text-white transition-colors">
+              {["Features", "How it Works", "Browse Events", "Contact"].map((item) => (
+                <a
+                  key={item}
+                  href={item === "Browse Events" ? "/explore" : item === "Contact" ? "#footer" : `#${item.toLowerCase().replace(/ /g, '-')}`}
+                  className="text-sm text-white/80 hover:text-white transition-colors"
+                  onClick={item === "Contact" ? (e) => {
+                    e.preventDefault();
+                    document.getElementById('footer')?.scrollIntoView({ behavior: 'smooth' });
+                  } : undefined}
+                >
                   {item}
                 </a>
               ))}
@@ -187,26 +197,17 @@ const Landing = () => {
         </nav>
 
         {/* Hero Content */}
-        <div className="relative z-10 flex-1 flex items-center justify-center px-4 text-center pt-20">
-          <div className="max-w-4xl mx-auto">
-            <motion.h1 
-              key={`t-${currentSlide}`}
-              initial={{ y: 20, opacity: 0 }} 
+        <div className="relative z-10 flex-1 flex items-center justify-center px-4 pt-20">
+          <div className="w-full max-w-5xl mx-auto flex flex-col items-center justify-center text-center">
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className="text-3xl sm:text-5xl lg:text-6xl font-bold text-white mb-4"
+              className="font-extrabold text-white text-2xl sm:text-4xl lg:text-5xl xl:text-6xl mb-10 drop-shadow-lg"
             >
-              {slide.title}
-            </motion.h1>
-            
-            <motion.h2 key={`s-${currentSlide}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-lg sm:text-2xl lg:text-3xl font-bold text-white mb-4">
-              {slide.subtitle}
-            </motion.h2>
-            
-            <p className="text-base sm:text-xl text-white/90 mb-4">
-              Unifying <span className={`${slide.highlight1.color} font-bold`}>{slide.highlight1.text}</span> with <span className={`${slide.highlight2.color} font-bold`}>{slide.highlight2.text}</span>
-            </p>
-
-            <div className="flex justify-center gap-4 mt-8">
+              An <span className="text-primary">events creation</span> platform leveraging <span className="text-green-500 font-extrabold">M-Pesa</span> and <span className="text-orange-400 font-extrabold">Bitcoin/Lightning Network</span>
+              <span className="block text-lg sm:text-xl font-semibold text-white/80 mt-4">enabling fundraising with global payment options.</span>
+            </motion.p>
+            <div className="flex justify-center gap-4">
               <Button size="lg" onClick={() => navigate("/signup")} className="bg-primary/90 hover:bg-primary text-lg px-8 py-6">
                 <Zap className="mr-2 h-5 w-5" /> Get Started
               </Button>
@@ -364,7 +365,7 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 px-4 bg-secondary dark:bg-slate-900 text-foreground dark:text-white">
+      <footer id="footer" className="py-12 px-4 bg-secondary dark:bg-slate-900 text-foreground dark:text-white">
         <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center">
