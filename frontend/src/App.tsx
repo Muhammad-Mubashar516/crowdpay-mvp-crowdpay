@@ -42,7 +42,7 @@ const App = () => (
                 <Route path="/signin" element={<SignIn />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/app" element={<AppLayout><Dashboard /></AppLayout>} />
-                <Route path="/explore" element={<AppLayout><ExploreCampaigns /></AppLayout>} />
+                <Route path="/explore" element={<ExploreCampaigns />} />
                 <Route path="/create" element={<AppLayout><CreateCampaign /></AppLayout>} />
                 <Route path="/my-links" element={<AppLayout><MyLinks /></AppLayout>} />
                 <Route path="/contributions" element={<AppLayout><Contributions /></AppLayout>} />
