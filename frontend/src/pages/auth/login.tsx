@@ -7,15 +7,16 @@ import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { Helmet } from "react-helmet-async";
-import logo from "@/assets/logo.png";
 import { Eye, EyeOff } from "lucide-react";
 import SubNav from "@/components/SubNav";
 import Footer from "@/components/Footer";
+import { authAPI, ErrorResponse } from "@/services/authApi";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, user, loading } = useAuth();
@@ -39,14 +40,41 @@ const SignIn = () => {
       return;
     }
 
-    await signIn(email, password);
+    setIsSubmitting(true);
 
-    toast({
-      title: "Welcome back!",
-      description: "You’re among the first to see this as we continue development.",
-    });
+    try {
+      // Call the backend API
+      const response = await authAPI.signIn({ email, password });
 
-    navigate("/app");
+      // Store the session data
+      if (response.session) {
+        localStorage.setItem("access_token", response.session.access_token);
+        localStorage.setItem("refresh_token", response.session.refresh_token);
+        localStorage.setItem("user", JSON.stringify(response.user));
+      }
+
+      // Update auth context
+      await signIn(email, password);
+
+      toast({
+        title: "Welcome back!",
+        description: response.message || "You've successfully signed in.",
+      });
+
+      navigate("/app");
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      
+      const errorMessage = error.error || "Invalid credentials. Please try again.";
+      
+      toast({
+        title: "Sign In Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Show loading state while checking session
@@ -88,6 +116,7 @@ const SignIn = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -99,6 +128,7 @@ const SignIn = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isSubmitting}
                 />
                 <button
                   type="button"
@@ -106,13 +136,14 @@ const SignIn = () => {
                   tabIndex={-1}
                   onClick={() => setShowPassword((v) => !v)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  disabled={isSubmitting}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
 
-              <Button type="submit" className="w-full">
-                Sign In
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Signing In..." : "Sign In"}
               </Button>
 
               <div className="text-center text-sm text-muted-foreground">
@@ -121,9 +152,6 @@ const SignIn = () => {
                   <Link to="/signup" className="text-primary hover:underline font-medium">
                     Create Account
                   </Link>
-                </p>
-                <p className="mt-4 p-3 bg-muted/50 rounded-md">
-                  💡 <strong>Demo Mode:</strong> Enter any email/password to explore the UI
                 </p>
               </div>
             </form>

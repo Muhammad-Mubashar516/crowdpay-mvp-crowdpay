@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Zap, Store, Users, Shield, Globe, Lock, ArrowRight, Share2, Twitter, Instagram, Sun, Moon, Mail } from "lucide-react";
+import { Zap, Store, Users, Shield, Globe, Lock, ArrowRight, ChevronRight, Share2, Sun, Moon, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import Footer from "@/components/Footer";
 
 // Import assets
 import heroBg1 from "@/assets/hero-bg.jpg";
@@ -52,26 +53,26 @@ const HERO_SLIDES = [
 ];
 
 const MODES = [
-  { 
-    icon: Store, 
-    title: "Merchant Mode", 
-    color: "primary", 
+  {
+    icon: Store,
+    title: "Merchant Mode",
+    color: "primary",
     shortDesc: "Split bills and share costs instantly.",
     fullDesc: "Perfect for restaurants, events, and group expenses. Track shared costs in real-time with QR-code payments.",
     items: ["Live bill progress", "Split with clarity", "QR-code payments"]
   },
-  { 
-    icon: Users, 
-    title: "Event Mode", 
-    color: "mpesa", 
+  {
+    icon: Users,
+    title: "Event Mode",
+    color: "mpesa",
     shortDesc: "Organize gatherings and manage contributions.",
     fullDesc: "Manage events, picnics, and social gatherings. Create invitation cards, track contributions, and generate tickets.",
     items: ["Invitation cards", "Item checklists", "Ticket generation"]
   },
-  { 
-    icon: Shield, 
-    title: "Activism Mode", 
-    color: "purple-500", 
+  {
+    icon: Shield,
+    title: "Activism Mode",
+    color: "purple-500",
     shortDesc: "Private fundraising for causes and movements.",
     fullDesc: "Secure fundraising for causes and movements. Anonymous donations with wallet verification for privacy.",
     items: ["Anonymous donations", "Wallet verification", "Privacy-focused"]
@@ -158,7 +159,7 @@ const Landing = () => {
         {/* Top left description removed for main hero use */}
 
         {/* Navbar */}
-        <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 bg-black/30 backdrop-blur-md border-b border-white/10">
+        <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 py-4 bg-black/40 backdrop-blur-md border-b border-white/10">
           <div className="container mx-auto flex justify-between items-center">
             <div className="flex items-center gap-2">
               <img src={logo} alt="CrowdPay" className="h-8 w-8 sm:h-10 sm:w-10" />
@@ -199,10 +200,17 @@ const Landing = () => {
         {/* Hero Content */}
         <div className="relative z-10 flex-1 flex items-center justify-center px-4 pt-20">
           <div className="w-full max-w-5xl mx-auto flex flex-col items-center justify-center text-center">
+            <motion.h1
+              className="text-6xl md:text-8xl font-bold text-white mb-6 md:mb-8 tracking-tight"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+            >
+              {slide.title}
+            </motion.h1>
             <motion.p
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className="font-extrabold text-white text-2xl sm:text-4xl lg:text-5xl xl:text-6xl mb-10 drop-shadow-lg"
+              className="font-bold text-white text-2xl sm:text-2xl md:text-4xl mb-10 drop-shadow-lg space-y-4"
             >
               An <span className="text-primary">events creation</span> platform leveraging <span className="text-green-500 font-extrabold">M-Pesa</span> and <span className="text-orange-400 font-extrabold">Bitcoin/Lightning Network</span>
               <span className="block text-lg sm:text-xl font-semibold text-white/80 mt-4">enabling fundraising with global payment options.</span>
@@ -210,6 +218,7 @@ const Landing = () => {
             <div className="flex justify-center gap-4">
               <Button size="lg" onClick={() => navigate("/signup")} className="bg-primary/90 hover:bg-primary text-lg px-8 py-6">
                 <Zap className="mr-2 h-5 w-5" /> Get Started
+                <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </div>
           </div>
@@ -230,33 +239,33 @@ const Landing = () => {
             <h2 className="text-3xl sm:text-5xl font-bold mb-4">Three Modes, <span className="text-primary">Endless Possibilities</span></h2>
             <p className="text-muted-foreground text-lg">Choose the perfect mode for your needs</p>
           </motion.div>
-          
+
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {MODES.map((mode, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} viewport={{ once: true }}>
                 <Card className="p-8 h-full bg-card/80 hover:shadow-xl transition-all group relative overflow-hidden cursor-pointer border-border/50">
-                   <div className="relative z-10">
-                      <div className={`w-14 h-14 rounded-xl bg-${mode.color}/10 flex items-center justify-center mb-6`}>
-                        <mode.icon className={`w-7 h-7 text-${mode.color}`} />
+                  <div className="relative z-10">
+                    <div className={`w-14 h-14 rounded-xl bg-${mode.color}/10 flex items-center justify-center mb-6`}>
+                      <mode.icon className={`w-7 h-7 text-${mode.color}`} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2 group-hover:text-primary transition-colors">{mode.title}</h3>
+                    <p className="text-muted-foreground mb-4">{mode.shortDesc}</p>
+
+                    {/* --- HOVER REVEAL LOGIC START --- */}
+                    <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-in-out opacity-0 group-hover:opacity-100">
+                      <div className="overflow-hidden">
+                        <p className="text-sm text-muted-foreground mb-3 pt-2 border-t border-border/50">{mode.fullDesc}</p>
+                        <ul className="space-y-2 text-sm text-muted-foreground">
+                          {mode.items.map((item) => (
+                            <li key={item} className="flex items-center gap-2">
+                              <span className={`w-1.5 h-1.5 rounded-full bg-${mode.color}`} /> {item}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <h3 className="text-2xl font-bold mb-2 group-hover:text-primary transition-colors">{mode.title}</h3>
-                      <p className="text-muted-foreground mb-4">{mode.shortDesc}</p>
-                      
-                      {/* --- HOVER REVEAL LOGIC START --- */}
-                      <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-in-out opacity-0 group-hover:opacity-100">
-                         <div className="overflow-hidden">
-                           <p className="text-sm text-muted-foreground mb-3 pt-2 border-t border-border/50">{mode.fullDesc}</p>
-                           <ul className="space-y-2 text-sm text-muted-foreground">
-                              {mode.items.map((item) => (
-                                <li key={item} className="flex items-center gap-2">
-                                  <span className={`w-1.5 h-1.5 rounded-full bg-${mode.color}`} /> {item}
-                                </li>
-                              ))}
-                           </ul>
-                         </div>
-                      </div>
-                      {/* --- HOVER REVEAL LOGIC END --- */}
-                   </div>
+                    </div>
+                    {/* --- HOVER REVEAL LOGIC END --- */}
+                  </div>
                 </Card>
               </motion.div>
             ))}
@@ -270,7 +279,7 @@ const Landing = () => {
           <motion.h2 initial="hidden" whileInView="visible" variants={fadeInUp} viewport={{ once: true }} className="text-3xl sm:text-5xl font-bold mb-16">
             How <span className="text-primary">CrowdPay</span> Works
           </motion.h2>
-          
+
           <div className="grid sm:grid-cols-3 gap-8">
             {STEPS.map((item, i) => (
               <motion.div key={i} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.2 }} viewport={{ once: true }} className="group">
@@ -304,7 +313,7 @@ const Landing = () => {
                   <h3 className="font-bold mb-1 group-hover:text-primary">{item.title}</h3>
                   <p className="text-xs text-muted-foreground mb-2">{item.shortDesc}</p>
                   <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-300 opacity-0 group-hover:opacity-100">
-                     <p className="text-xs text-muted-foreground/80 overflow-hidden">{item.fullDesc}</p>
+                    <p className="text-xs text-muted-foreground/80 overflow-hidden">{item.fullDesc}</p>
                   </div>
                 </Card>
               </motion.div>
@@ -321,7 +330,7 @@ const Landing = () => {
                 <img src={bitcoinLogo} alt="Bitcoin" className="w-12 h-12" />
                 <h3 className="text-2xl font-bold">Pay with Bitcoin</h3>
               </div>
-              
+
               {/* --- HOVER REVEAL LOGIC START --- */}
               <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-in-out opacity-0 group-hover:opacity-100">
                 <ul className="space-y-2 text-muted-foreground overflow-hidden pt-2">
@@ -330,7 +339,7 @@ const Landing = () => {
                   <li className="flex gap-2 items-center"><Globe className="w-4 h-4 text-bitcoin" /> Borderless Payments</li>
                 </ul>
               </div>
-               {/* --- HOVER REVEAL LOGIC END --- */}
+              {/* --- HOVER REVEAL LOGIC END --- */}
             </Card>
 
             <Card className="p-8 border-mpesa/30 bg-mpesa/5 hover:border-mpesa/50 transition-all group">
@@ -339,7 +348,7 @@ const Landing = () => {
                 <h3 className="text-2xl font-bold">Pay with M-Pesa</h3>
               </div>
 
-               {/* --- HOVER REVEAL LOGIC START --- */}
+              {/* --- HOVER REVEAL LOGIC START --- */}
               <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-all duration-500 ease-in-out opacity-0 group-hover:opacity-100">
                 <ul className="space-y-2 text-muted-foreground overflow-hidden pt-2">
                   <li className="flex gap-2 items-center"><ArrowRight className="w-4 h-4 text-mpesa" /> Instant KES to BTC conversion</li>
@@ -354,46 +363,21 @@ const Landing = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 bg-gradient-to-br from-primary to-orange-600 text-white text-center">
+      <motion.section className="py-24 px-4 bg-gradient-to-br from-primary to-orange-600 text-white text-center">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to Start Accepting Bitcoin?</h2>
-          <div className="flex justify-center gap-4">
-            <Button size="lg" variant="secondary" onClick={() => navigate("/signup")} className="text-lg px-8">Create Your Link</Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 bg-transparent border-white text-white hover:bg-white/10">Learn More</Button>
-          </div>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6 md:mb-8">Ready to Start Accepting Bitcoin?</h2>
+          <motion.div className="flex justify-center gap-4">
+            <Button size="lg" variant="secondary" onClick={() => navigate("/signup")} className="text-md md:text-xl px-4 md:px-8 py-4 md:py-6">
+              Create Your Link
+              <ChevronRight className="ml-2 h-5 w-5" />
+              </Button>
+            <Button size="lg" variant="outline" className="text-md md:text-xl px-8 py-4 md:py-6 bg-transparent border-white text-white hover:text-black hover:bg-white/10">Learn More</Button>
+          </motion.div>
         </motion.div>
-      </section>
+      </motion.section>
 
       {/* Footer */}
-      <footer id="footer" className="py-12 px-4 bg-secondary dark:bg-slate-900 text-foreground dark:text-white">
-        <div className="container mx-auto max-w-6xl flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 flex items-center justify-center">
-              <img src={logo} alt="CrowdPay" className="w-6 h-6" />
-            </div>
-            <span className="font-bold text-2xl">CrowdPay</span>
-          </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
-            {["Browse Events", "Features", "How it Works"].map(item => (
-              <a key={item} href="#" className="hover:text-foreground transition-colors">{item}</a>
-            ))}
-          </div>
-          <div className="flex gap-4">
-            <a href="https://x.com/crowdpay_ke" target="_blank" rel="noopener noreferrer">
-              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Twitter className="w-5 h-5" /></Button>
-            </a>
-            <a href="https://www.instagram.com/crowd.pay" target="_blank" rel="noopener noreferrer">
-              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Instagram className="w-5 h-5" /></Button>
-            </a>
-            <a href="mailto:crowdpay2026@gmail.com" target="_blank" rel="noopener noreferrer">
-              <Button size="icon" variant="ghost" className="text-muted-foreground hover:text-foreground"><Mail className="w-5 h-5" /></Button>
-            </a>
-          </div>
-        </div>
-        <div className="text-center mt-8 text-muted-foreground text-sm">
-          © {new Date().getFullYear()} CrowdPay. Bitcoin-powered crowdfunding.
-        </div>
-      </footer>
+      <Footer />
     </>
   );
 };

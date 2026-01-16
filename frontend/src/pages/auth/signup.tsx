@@ -7,7 +7,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/MockAuthContext";
 import { Helmet } from "react-helmet-async";
-import { Zap, Wallet, RefreshCw, Copy, Check, ArrowRight, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Zap, Wallet, RefreshCw, Copy, Check, ArrowRight, ArrowLeft, Eye, EyeOff, Sun, Moon } from "lucide-react";
 import logo from "@/assets/logo.png";
 import bitcoinLogo from "@/assets/bitcoin-logo.png";
 import SubNav from "@/components/SubNav";
@@ -123,7 +123,7 @@ const SignUp = () => {
 
     toast({
       title: "Account Created!",
-      description: "Welcome to CrowdPay. You’re among the first to see this as we continue development.",
+      description: "Welcome to CrowdPay. This is a UI demo.",
     });
 
     navigate("/app");
@@ -152,7 +152,6 @@ const SignUp = () => {
       <div className="min-h-screen bg-background">
         {/* Navigation */}
         <SubNav />
-
         {/* Sign Up Form */}
         <div className="container mx-auto px-4 py-16">
           <Card className="max-w-md mx-auto p-8">
@@ -178,6 +177,7 @@ const SignUp = () => {
                   <Label className="text-sm font-medium mb-2 block">Username</Label>
                   <Input
                     type="text"
+                    required
                     placeholder="your_username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -361,7 +361,7 @@ const SignUp = () => {
                     type="button"
                     variant="outline"
                     className="w-full gap-2"
-                    onClick={handleSignUp}
+                    onClick={() => navigate("/app")}
                   >
                     Skip this step
                   </Button>
@@ -386,9 +386,8 @@ const SignUp = () => {
 
 
       </div>
-
-      {/* Footer (copied from Landing) */}
-      <Footer />
+      {/* Footer*/}
+    <Footer />
     </>
   );
 };
