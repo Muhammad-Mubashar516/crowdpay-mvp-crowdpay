@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useCampaigns, mockContributions } from "@/contexts/CampaignsContext";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Bitcoin, Smartphone, Share2 } from "lucide-react";
+import { Bitcoin, Smartphone, Share2, Sun, Moon } from "lucide-react";
 
 const categoryLabels: Record<string, { label: string; emoji: string }> = {
   education: { label: "Education", emoji: "🎓" },
@@ -35,8 +35,8 @@ const Campaign = () => {
   // Calculate total raised from mock contributions
   const totalRaised = campaign
     ? mockContributions
-        .filter((c) => c.campaign_id === campaign.id)
-        .reduce((sum, c) => sum + c.amount, 0)
+      .filter((c) => c.campaign_id === campaign.id)
+      .reduce((sum, c) => sum + c.amount, 0)
     : 0;
 
   useEffect(() => {
@@ -94,19 +94,43 @@ const Campaign = () => {
 
   const themeColor = campaign.theme_color || "#F7931A";
 
+  // Dark and light mode toggle
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('theme');
+      if (saved) return saved === 'dark';
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  // Theme toggle logic
+  useEffect(() => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      root.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark(!isDark);
+
   return (
     <>
       <Helmet>
         <title>{campaign.title} - CrowdPay</title>
         <meta name="description" content={campaign.description || `Support ${campaign.title}`} />
-        
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:url" content={window.location.href} />
         <meta property="og:title" content={`${campaign.title} - CrowdPay`} />
         <meta property="og:description" content={campaign.description || `Support ${campaign.title}`} />
         {campaign.cover_image_url && <meta property="og:image" content={campaign.cover_image_url} />}
-        
+
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:url" content={window.location.href} />
@@ -125,10 +149,21 @@ const Campaign = () => {
               </div>
               <span className="font-bold text-xl">CrowdPay</span>
             </div>
+            <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={shareLink}>
               <Share2 className="w-4 h-4 mr-2" />
               Share
             </Button>
+              <Button
+                onClick={toggleTheme}
+                variant="secondary"
+                size="icon"
+                className="backdrop-blur-sm dark:text-white light: hover:bg-white/20"
+                aria-label="Toggle theme"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
         </nav>
 

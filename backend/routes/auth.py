@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 import logging
+import re
 from services import get_supabase_client
 from . import auth_bp
 from pydantic import BaseModel, EmailStr, validator
@@ -9,14 +10,46 @@ supabase = get_supabase_client()
 
 
 class SignUpRequest(BaseModel):
+    username: str
     email: EmailStr
     password: str
-    full_name: str = None
+    password_confirmation: str
+
+    @validator('username')
+    def validate_username(cls, v):
+        if len(v) < 3:
+            raise ValueError('Username must be at least 3 characters')
+        if not v.replace('_', '').replace('-', '').isalnum():
+            raise ValueError('Username can only contain letters, numbers, hyphens and underscores')
+        return v
 
     @validator('password')
     def validate_password(cls, v):
-        if len(v) < 6:
-            raise ValueError('Password must be at least 6 characters')
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        
+        # Check for uppercase letter
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter')
+        
+        # Check for lowercase letter
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter')
+        
+        # Check for digit
+        if not re.search(r'\d', v):
+            raise ValueError('Password must contain at least one number')
+        
+        # Check for special character
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]\\\/~`]', v):
+            raise ValueError('Password must contain at least one special character (!@#$%^&*...)')
+        
+        return v
+
+    @validator('password_confirmation')
+    def passwords_match(cls, v, values):
+        if 'password' in values and v != values['password']:
+            raise ValueError('Passwords do not match')
         return v
 
 
@@ -42,12 +75,48 @@ def signup():
     """Register a new user using Supabase Auth with duplicate check"""
     try:
         data = request.get_json()
-        signup_data = SignUpRequest(**data)
+        
+        # Validate input data
+        try:
+            signup_data = SignUpRequest(**data)
+        except ValueError as ve:
+            # Return validation errors with specific field information
+            error_msg = str(ve)
+            # Extract field name from pydantic error if possible
+            if "username" in error_msg.lower():
+                field = "username"
+            elif "password" in error_msg.lower() and "not match" not in error_msg.lower():
+                field = "password"
+            elif "not match" in error_msg.lower():
+                field = "password_confirmation"
+            elif "email" in error_msg.lower():
+                field = "email"
+            else:
+                field = "general"
+            
+            return jsonify({
+                'error': error_msg,
+                'field': field
+            }), 400
 
-        # Check if user already exists in users table
-        existing_user = supabase.table("users").select("*").eq("email", signup_data.email).execute()
-        if existing_user.data:
-            return jsonify({'error': 'User already exists'}), 409
+        # Check if email already exists in users table
+        existing_email = supabase.table("users").select("*").eq("email", signup_data.email).execute()
+        if existing_email.data:
+            return jsonify({
+                'error': 'Email already exists',
+                'field': 'email'
+            }), 409
+
+        # Check if username already exists
+        try:
+            existing_username = supabase.table("users").select("*").eq("username", signup_data.username).execute()
+            if existing_username.data:
+                return jsonify({
+                    'error': 'Username already taken',
+                    'field': 'username'
+                }), 409
+        except Exception as username_error:
+            logger.warning(f"Username check skipped: {str(username_error)}")
 
         # Create user in Supabase Auth
         res = supabase.auth.sign_up({
@@ -56,27 +125,37 @@ def signup():
         })
 
         if res.user is None:
-            return jsonify({'error': 'Registration failed'}), 400
+            return jsonify({
+                'error': 'Registration failed. Please try again.',
+                'field': 'general'
+            }), 400
 
         # Save extra user info in your users table
         user_data = {
             "id": res.user.id,
             "email": signup_data.email,
-            "full_name": signup_data.full_name
+            "username": signup_data.username
         }
         supabase.table("users").insert(user_data).execute()
 
+        # Check if email confirmation is required
+        message = "User registered successfully"
+        if res.session is None:
+            message = "User registered successfully. Please check your email to confirm your account."
+        
         return jsonify({
-            "message": "User registered successfully",
+            "message": message,
             "user": user_data,
-            "session": session_to_dict(res.session)
+            "session": session_to_dict(res.session),
+            "email_confirmation_required": res.session is None
         }), 201
 
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
         logger.error(f"Signup error: {str(e)}")
-        return jsonify({'error': 'Registration failed'}), 500
+        return jsonify({
+            'error': 'Registration failed. Please try again.',
+            'field': 'general'
+        }), 500
 
 
 @auth_bp.route('/signin', methods=['POST'])
@@ -172,3 +251,31 @@ def refresh():
     except Exception as e:
         logger.error(f"Refresh error: {str(e)}")
         return jsonify({'error': 'Failed to refresh token'}), 401
+
+
+@auth_bp.route('/users', methods=['GET'])
+def get_all_users():
+    """Get all users from the database (admin only - add auth check in production)"""
+    try:
+        auth_header = request.headers.get('Authorization')
+        
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': 'No authorization token'}), 401
+
+        token = auth_header.split(' ')[1]
+        user_resp = supabase.auth.get_user(token)
+
+        if not user_resp or not user_resp.user:
+            return jsonify({'error': 'Invalid token'}), 401
+
+        # Fetch all users from users table
+        users_resp = supabase.table("users").select("id, email, username, created_at").execute()
+        
+        return jsonify({
+            'users': users_resp.data,
+            'count': len(users_resp.data)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Get all users error: {str(e)}")
+        return jsonify({'error': 'Failed to fetch users'}), 500
