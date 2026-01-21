@@ -57,6 +57,12 @@ const Dashboard = () => {
       </Helmet>
 
       <div className="p-6 max-w-5xl mx-auto">
+        {/* Welcome Message */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold">
+            Welcome{user?.username ? `, ${user.username}` : ""}!
+          </h2>
+        </div>
         {/* Stats Cards Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {/* BTC Balance Card */}
