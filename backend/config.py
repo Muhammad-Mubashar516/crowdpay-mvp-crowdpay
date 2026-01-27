@@ -5,40 +5,47 @@ load_dotenv()
 
 class Config:
     """Application configuration"""
-    
+
     # Flask
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
+
     # Supabase
     SUPABASE_URL = os.getenv('SUPABASE_URL')
     SUPABASE_KEY = os.getenv('SUPABASE_KEY')
-    
-    # Bitnob API
-    BITNOB_API_KEY = os.getenv('BITNOB_API_KEY')
-    BITNOB_API_URL = os.getenv('BITNOB_API_URL', 'https://api.bitnob.co')
-    BITNOB_WEBHOOK_SECRET = os.getenv('BITNOB_WEBHOOK_SECRET')
-    
+
+    # LNbits Configuration
+    # LNbits is an open-source Lightning wallet/accounts system
+    # Demo server: https://demo.lnbits.com (for testing only)
+    LNBITS_URL = os.getenv('LNBITS_URL', 'https://demo.lnbits.com')
+    LNBITS_WALLET_ID = os.getenv('LNBITS_WALLET_ID')
+    LNBITS_ADMIN_KEY = os.getenv('LNBITS_ADMIN_KEY')  # Full access - keep secure!
+    LNBITS_INVOICE_KEY = os.getenv('LNBITS_INVOICE_KEY')  # Read-only, safe for invoices
+    LNBITS_WEBHOOK_URL = os.getenv('LNBITS_WEBHOOK_URL', '')  # Optional webhook for payment notifications
+
     # Polling Configuration
     POLLING_INTERVAL = int(os.getenv('POLLING_INTERVAL', '30'))  # seconds
     POLLING_TIMEOUT = int(os.getenv('POLLING_TIMEOUT', '3600'))  # 1 hour
-    
+
+    # Platform Fee Configuration (percentage)
+    PLATFORM_FEE_PERCENT = float(os.getenv('PLATFORM_FEE_PERCENT', '2.5'))
+
     # CORS
     CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',')
-    
+
     @classmethod
     def validate(cls):
         """Validate required configuration"""
         required = [
             'SUPABASE_URL',
             'SUPABASE_KEY',
-            'BITNOB_API_KEY',
-            'BITNOB_WEBHOOK_SECRET'
+            'LNBITS_URL',
+            'LNBITS_INVOICE_KEY'
         ]
-        
+
         missing = [key for key in required if not getattr(cls, key)]
-        
+
         if missing:
             raise ValueError(f"Missing required configuration: {', '.join(missing)}")
-        
+
         return True

@@ -1,7 +1,7 @@
 from .supabase_client import get_supabase_client
-from .bitnob import BitnobService
+from .lnbits import LNbitsService
 from .invoice_polling import InvoicePollingService
-from .auth import AuthService   
+from .auth import AuthService
 
 
-__all__ = ['get_supabase_client', 'BitnobService', 'InvoicePollingService', 'AuthService']
+__all__ = ['get_supabase_client', 'LNbitsService', 'InvoicePollingService', 'AuthService']
