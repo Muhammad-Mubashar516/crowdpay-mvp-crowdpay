@@ -11,7 +11,7 @@ real-time notifications (see /api/webhooks/lnbits endpoint).
 
 import logging
 import threading
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Callable, Optional
 
 from .lnbits import LNbitsService, LNbitsAPIError
@@ -87,14 +87,14 @@ class InvoicePollingService:
         - Timeout is reached (POLLING_TIMEOUT)
         - stop_polling() is called
         """
-        start_time = datetime.utcnow()
+        start_time = datetime.now(timezone.utc)
         timeout = timedelta(seconds=Config.POLLING_TIMEOUT)
         interval = Config.POLLING_INTERVAL
 
         try:
             while not stop_flag.is_set():
                 # Check for timeout
-                if datetime.utcnow() - start_time > timeout:
+                if datetime.now(timezone.utc) - start_time > timeout:
                     logger.warning(f"Polling timeout for contribution {contribution_id}")
                     self._update_contribution_status_by_id(contribution_id, "expired")
                     break
@@ -113,7 +113,7 @@ class InvoicePollingService:
                         self._update_contribution_status_by_payment_hash(
                             payment_hash=payment_hash,
                             status="paid",
-                            paid_at=datetime.utcnow().isoformat(),
+                            paid_at=datetime.now(timezone.utc).isoformat(),
                             preimage=status_data.get("preimage")
                         )
 
@@ -173,7 +173,7 @@ class InvoicePollingService:
         """Update contribution status by payment hash"""
         update_data = {
             "payment_status": status,
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.now(timezone.utc).isoformat()
         }
 
         if paid_at:
@@ -194,7 +194,7 @@ class InvoicePollingService:
         self.supabase.table("contributions") \
             .update({
                 "payment_status": status,
-                "updated_at": datetime.utcnow().isoformat()
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }) \
             .eq("id", contribution_id) \
             .execute()
@@ -241,7 +241,7 @@ class InvoicePollingService:
         self.supabase.table("campaigns") \
             .update({
                 "current_amount": new_amount,
-                "updated_at": datetime.utcnow().isoformat()
+                "updated_at": datetime.now(timezone.utc).isoformat()
             }) \
             .eq("id", campaign_id) \
             .execute()
@@ -304,7 +304,7 @@ class InvoicePollingService:
             self._update_contribution_status_by_payment_hash(
                 payment_hash=payment_hash,
                 status="paid",
-                paid_at=datetime.utcnow().isoformat()
+                paid_at=datetime.now(timezone.utc).isoformat()
             )
 
             # Update campaign amount

@@ -1,13 +1,14 @@
 # CrowdPay MVP Backend
 
-A Flask-based backend service for crowdfunding campaigns with Bitnob API integration for Bitcoin Lightning Network and fiat payments.
+A Flask-based backend service for crowdfunding campaigns with LNbits integration for Bitcoin Lightning Network payments.
 
 ## Features
 
 - **Campaign Management**: Create, update, and track fundraising campaigns
 - **Contribution Tracking**: Accept and monitor contributions with real-time status updates
-- **Lightning Payments**: Integration with Blink API for Bitcoin Lightning Network payments
+- **Lightning Payments**: Integration with LNbits for Bitcoin Lightning Network payments
 - **Invoice Polling**: Automatic polling service to track payment confirmations
+- **Webhook Support**: Real-time payment notifications via LNbits webhooks
 - **Database**: Supabase PostgreSQL backend with Row Level Security
 - **RESTful API**: Well-structured API endpoints with proper error handling
 
@@ -15,7 +16,7 @@ A Flask-based backend service for crowdfunding campaigns with Bitnob API integra
 
 - **Framework**: Flask 3.0
 - **Database**: Supabase (PostgreSQL)
-- **Payment Gateway**: Bitnob API (Lightning Network + Fiat)
+- **Payment Gateway**: LNbits (Lightning Network)
 - **Validation**: Pydantic models
 - **Testing**: Pytest
 - **Production Server**: Gunicorn
@@ -34,16 +35,17 @@ backend/
 ├── routes/
 │   ├── __init__.py
 │   ├── campaigns.py           # Campaign endpoints
-│   └── contributions.py       # Contribution endpoints
+│   ├── contributions.py       # Contribution endpoints
+│   ├── payments.py            # Invoice/wallet endpoints
+│   └── auth.py                # Authentication endpoints
 ├── services/
 │   ├── __init__.py
-│   ├── bitnob.py              # Bitnob API integration
-│   ├── invoice_polling.py    # Payment polling service
-│   └── supabase_client.py    # Database client
-├── tests/
-│   ├── test_bitnob.py
-│   ├── test_contributions.py
-│   └── test_supabase.py
+│   ├── lnbits.py              # LNbits API integration
+│   ├── invoice_polling.py     # Payment polling service
+│   ├── auth.py                # Authentication service
+│   └── supabase_client.py     # Database client
+├── migrations/
+│   └── 001_rename_bitnob_to_lnbits.sql  # DB migration
 ├── supabase_setup.sql         # Database schema
 └── supabase_rls.sql           # Row Level Security policies
 ```
@@ -54,7 +56,7 @@ backend/
 
 - Python 3.9+
 - Supabase account
-- Bitnob API credentials
+- LNbits wallet (demo.lnbits.com for testing)
 
 ### Installation
 
@@ -75,31 +77,37 @@ backend/
    ```
 
 4. **Configure environment variables**
-   Create a `.env` file in the backend directory:
+
+   Copy `.env.example` to `.env` and fill in the values:
    ```env
    # Flask Configuration
    SECRET_KEY=your-secret-key-here
-   FLASK_DEBUG=False
+   FLASK_DEBUG=True
 
    # Supabase Configuration
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_KEY=your-supabase-anon-key
 
-   # Bitnob API Configuration
-   BITNOB_API_KEY=your-bitnob-api-key
-   BITNOB_API_URL=https://api.bitnob.co
-   BITNOB_WEBHOOK_SECRET=your-webhook-secret
+   # LNbits Configuration
+   LNBITS_URL=https://demo.lnbits.com
+   LNBITS_WALLET_ID=your-wallet-id
+   LNBITS_ADMIN_KEY=your-admin-key
+   LNBITS_INVOICE_KEY=your-invoice-key
+   LNBITS_WEBHOOK_URL=https://your-backend.com/api/webhooks/lnbits
+
+   # Platform Fee (percentage)
+   PLATFORM_FEE_PERCENT=2.5
 
    # Polling Configuration
    POLLING_INTERVAL=30
    POLLING_TIMEOUT=3600
 
    # CORS
-   CORS_ORIGINS=http://localhost:3000,https://yourdomain.com
+   CORS_ORIGINS=http://localhost:3000,http://localhost:5173
    ```
 
 5. **Set up database**
-   
+
    Run the SQL scripts in your Supabase SQL editor:
    ```bash
    # First run supabase_setup.sql
@@ -119,30 +127,7 @@ The API will be available at `http://localhost:5000`
 ### Production Mode
 
 ```bash
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-```
-
-For better production configuration:
-```bash
-gunicorn -w 4 \
-  --bind 0.0.0.0:5000 \
-  --timeout 120 \
-  --access-logfile - \
-  --error-logfile - \
-  "app:create_app()"
-```
-
-## Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=. --cov-report=html
-
-# Run specific test file
-pytest tests/test_blink.py -v
+gunicorn -w 4 -b 0.0.0.0:5000 "app:create_app()"
 ```
 
 ## API Endpoints
@@ -159,12 +144,20 @@ pytest tests/test_blink.py -v
 - `GET /api/campaigns/<id>/contributions` - Get campaign contributions
 
 ### Contributions
-- `POST /api/contributions` - Create a new contribution
+- `POST /api/contributions` - Create contribution with Lightning invoice
 - `GET /api/contributions` - List contributions (with filters)
 - `GET /api/contributions/<id>` - Get contribution details
 - `GET /api/contributions/<id>/status` - Check payment status
 - `POST /api/contributions/<id>/cancel` - Cancel pending contribution
-- `POST /api/contributions/webhook` - Bitnob webhook endpoint
+- `POST /api/contributions/webhook` - LNbits webhook endpoint
+
+### Invoices & Wallet
+- `POST /api/invoice/create` - Create standalone Lightning invoice
+- `GET /api/invoice/status/<payment_hash>` - Check invoice status
+- `POST /api/invoice/decode` - Decode BOLT11 invoice
+- `GET /api/wallet/balance` - Get wallet balance (auth required)
+- `GET /api/wallet/payments` - Get recent payments (auth required)
+- `POST /api/webhooks/lnbits` - LNbits webhook endpoint
 
 ## Environment Variables
 
@@ -174,55 +167,70 @@ pytest tests/test_blink.py -v
 | `FLASK_DEBUG` | Enable debug mode | False | No |
 | `SUPABASE_URL` | Supabase project URL | - | Yes |
 | `SUPABASE_KEY` | Supabase anon key | - | Yes |
-| `BITNOB_API_KEY` | Bitnob API key | - | Yes |
-| `BITNOB_API_URL` | Bitnob API endpoint | https://api.bitnob.co | No |
-| `BITNOB_WEBHOOK_SECRET` | Webhook signature secret | - | Recommended |
+| `LNBITS_URL` | LNbits instance URL | https://demo.lnbits.com | No |
+| `LNBITS_WALLET_ID` | LNbits wallet ID | - | Yes |
+| `LNBITS_ADMIN_KEY` | LNbits admin key | - | Yes |
+| `LNBITS_INVOICE_KEY` | LNbits invoice/read key | - | Yes |
+| `LNBITS_WEBHOOK_URL` | Webhook URL for notifications | - | No |
+| `PLATFORM_FEE_PERCENT` | Platform fee percentage | 2.5 | No |
 | `POLLING_INTERVAL` | Invoice polling interval (seconds) | 30 | No |
 | `POLLING_TIMEOUT` | Invoice polling timeout (seconds) | 3600 | No |
 | `CORS_ORIGINS` | Allowed CORS origins | * | No |
 
-## Database Schema
+## LNbits API Keys
 
-### Campaigns Table
-- `id` (UUID, Primary Key)
-- `title` (VARCHAR)
-- `description` (TEXT)
-- `target_amount` (DECIMAL)
-- `current_amount` (DECIMAL)
-- `currency` (VARCHAR)
-- `creator_id` (VARCHAR)
-- `creator_email` (VARCHAR)
-- `status` (VARCHAR)
-- `end_date` (TIMESTAMP)
-- `created_at` (TIMESTAMP)
-- `updated_at` (TIMESTAMP)
+LNbits uses two types of API keys:
 
-### Contributions Table
-- `id` (UUID, Primary Key)
-- `campaign_id` (UUID, Foreign Key)
-- `contributor_name` (VARCHAR)
-- `contributor_email` (VARCHAR)
-- `amount` (DECIMAL)
-- `currency` (VARCHAR)
-- `payment_status` (VARCHAR)
-- `bitnob_payment_id` (VARCHAR)
-- `bitnob_payment_request` (TEXT)
-- `bitnob_payment_hash` (VARCHAR)
-- `bitnob_reference` (VARCHAR)
-- `transaction_id` (VARCHAR)
-- `message` (TEXT)
-- `is_anonymous` (BOOLEAN)
-- `created_at` (TIMESTAMP)
-- `paid_at` (TIMESTAMP)
+- **Admin Key**: Full access - can create invoices, pay invoices, get balance
+- **Invoice Key**: Limited access - can only create invoices and check status
+
+For security, the backend uses:
+- Invoice Key for creating and checking invoices (safer)
+- Admin Key only for paying invoices (if needed for payouts)
+
+## Payment Flow
+
+```
+1. User initiates contribution
+   └── POST /api/contributions
+
+2. Backend creates LNbits invoice
+   └── LNbits POST /api/v1/payments
+
+3. Frontend displays QR code
+   └── BOLT11 invoice string
+
+4. User pays with Lightning wallet
+   └── Any Lightning-compatible wallet
+
+5. Payment confirmation (two paths)
+   ├── Path A: Polling service detects payment
+   │   └── GET /api/v1/payments/{payment_hash}
+   └── Path B: LNbits webhook notification
+       └── POST /api/webhooks/lnbits
+
+6. Backend updates database
+   ├── Contribution status → "paid"
+   ├── Campaign amount incremented
+   └── Platform fee calculated
+```
+
+## Platform Fee Logic
+
+When a payment is confirmed:
+1. Full payment amount is recorded
+2. Platform fee is calculated (default 2.5%)
+3. Creator amount = Payment - Platform fee
+4. Campaign `current_amount` is incremented by creator amount
 
 ## Security
 
 - Row Level Security (RLS) enabled on all tables
-- API key authentication for Bitnob integration
-- Webhook signature verification for security
+- API key authentication for LNbits integration
+- Webhook signature verification (optional)
 - CORS configuration for frontend integration
 - Input validation using Pydantic models
-- Secure password handling (use environment variables)
+- Admin keys never exposed to frontend
 
 ## Error Handling
 
@@ -242,26 +250,11 @@ HTTP Status Codes:
 - `404` - Not Found
 - `500` - Internal Server Error
 
-## Payment Flow
-
-1. User creates a contribution
-2. Backend generates Bitnob payment (Lightning invoice or checkout)
-3. User receives payment request (Lightning invoice or checkout URL)
-4. Polling service monitors payment status
-5. On payment confirmation:
-   - Contribution status updated to "paid"
-   - Campaign current_amount incremented
-   - Polling stops
-
-**Payment Methods Supported:**
-- **Bitcoin/Lightning**: For BTC and SATS currencies
-- **Fiat Currencies**: NGN, USD, and others via hosted checkout
-
 ## Development
 
 ### Adding New Endpoints
 
-1. Define route in appropriate blueprint (`routes/campaigns.py` or `routes/contributions.py`)
+1. Define route in appropriate blueprint
 2. Add validation using Pydantic models
 3. Implement business logic
 4. Add proper error handling
@@ -271,9 +264,10 @@ HTTP Status Codes:
 
 When modifying the schema:
 1. Update `supabase_setup.sql`
-2. Update model classes in `models/`
-3. Test locally
-4. Apply changes to Supabase
+2. Create migration script in `migrations/`
+3. Update model classes in `models/`
+4. Test locally
+5. Apply changes to Supabase
 
 ## Troubleshooting
 
@@ -282,25 +276,14 @@ When modifying the schema:
 **Issue**: `Configuration error: Missing required configuration`
 - **Solution**: Ensure all required environment variables are set in `.env`
 
-**Issue**: `Failed to create payment`
-- **Solution**: Verify Bitnob API credentials and check API status
+**Issue**: `Failed to create invoice`
+- **Solution**: Verify LNbits API credentials and check wallet balance
 
-**Issue**: `Invalid webhook signature`
-- **Solution**: Ensure BITNOB_WEBHOOK_SECRET matches your Bitnob dashboard settings
-
-**Issue**: `Supabase connection failed`
-- **Solution**: Check Supabase URL and key, ensure project is active
+**Issue**: `LNbits connection failed`
+- **Solution**: Check LNBITS_URL and ensure the instance is accessible
 
 **Issue**: Polling not working
 - **Solution**: Check POLLING_INTERVAL and ensure background threads are enabled
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Ensure tests pass
-5. Submit a pull request
 
 ## License
 
