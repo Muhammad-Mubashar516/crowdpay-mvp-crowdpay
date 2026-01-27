@@ -1,4 +1,5 @@
 -- CrowdPay Database Setup for Supabase
+-- Payment Provider: LNbits (Lightning Network)
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -10,7 +11,7 @@ CREATE TABLE IF NOT EXISTS campaigns (
     description TEXT NOT NULL,
     target_amount DECIMAL(15, 2) NOT NULL CHECK (target_amount > 0),
     current_amount DECIMAL(15, 2) NOT NULL DEFAULT 0 CHECK (current_amount >= 0),
-    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(10) NOT NULL DEFAULT 'SATS',
     creator_id VARCHAR(255) NOT NULL,
     creator_email VARCHAR(255),
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled', 'expired')),
@@ -20,19 +21,29 @@ CREATE TABLE IF NOT EXISTS campaigns (
 );
 
 -- Contributions Table
+-- Stores Lightning payment details from LNbits
 CREATE TABLE IF NOT EXISTS contributions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
     contributor_name VARCHAR(100),
     contributor_email VARCHAR(255),
     amount DECIMAL(15, 2) NOT NULL CHECK (amount > 0),
-    currency VARCHAR(10) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(10) NOT NULL DEFAULT 'SATS',
     payment_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'failed', 'expired', 'cancelled')),
+
+    -- LNbits payment fields (primary)
+    lnbits_payment_hash VARCHAR(255),
+    lnbits_payment_request TEXT,
+    lnbits_checking_id VARCHAR(255),
+
+    -- Legacy fields for backward compatibility (will be deprecated)
     bitnob_payment_id VARCHAR(255),
     bitnob_payment_request TEXT,
     bitnob_payment_hash VARCHAR(255),
     bitnob_reference VARCHAR(255),
-    transaction_id VARCHAR(255),
+
+    -- Transaction details
+    transaction_id VARCHAR(255),  -- Payment preimage (proof of payment)
     message TEXT,
     is_anonymous BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -46,9 +57,13 @@ CREATE INDEX IF NOT EXISTS idx_campaigns_created_at ON campaigns(created_at DESC
 
 CREATE INDEX IF NOT EXISTS idx_contributions_campaign_id ON contributions(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_payment_status ON contributions(payment_status);
+CREATE INDEX IF NOT EXISTS idx_contributions_lnbits_payment_hash ON contributions(lnbits_payment_hash);
+CREATE INDEX IF NOT EXISTS idx_contributions_lnbits_checking_id ON contributions(lnbits_checking_id);
+CREATE INDEX IF NOT EXISTS idx_contributions_created_at ON contributions(created_at DESC);
+
+-- Legacy indexes (for backward compatibility during migration)
 CREATE INDEX IF NOT EXISTS idx_contributions_bitnob_payment_id ON contributions(bitnob_payment_id);
 CREATE INDEX IF NOT EXISTS idx_contributions_bitnob_reference ON contributions(bitnob_reference);
-CREATE INDEX IF NOT EXISTS idx_contributions_created_at ON contributions(created_at DESC);
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -85,13 +100,16 @@ CREATE TRIGGER update_campaign_status_on_goal
 
 -- Comments for documentation
 COMMENT ON TABLE campaigns IS 'Stores fundraising campaign information';
-COMMENT ON TABLE contributions IS 'Stores individual contributions to campaigns';
+COMMENT ON TABLE contributions IS 'Stores individual contributions to campaigns via Lightning Network';
 
-COMMENT ON COLUMN campaigns.target_amount IS 'Fundraising goal amount';
-COMMENT ON COLUMN campaigns.current_amount IS 'Current amount raised';
+COMMENT ON COLUMN campaigns.target_amount IS 'Fundraising goal amount in satoshis';
+COMMENT ON COLUMN campaigns.current_amount IS 'Current amount raised in satoshis';
+COMMENT ON COLUMN campaigns.currency IS 'Currency: SATS (default) or BTC';
 COMMENT ON COLUMN campaigns.status IS 'Campaign status: active, completed, cancelled, or expired';
 
 COMMENT ON COLUMN contributions.payment_status IS 'Payment status: pending, paid, failed, expired, or cancelled';
-COMMENT ON COLUMN contributions.bitnob_payment_id IS 'Bitnob API payment identifier';
-COMMENT ON COLUMN contributions.bitnob_reference IS 'Unique reference for payment tracking';
+COMMENT ON COLUMN contributions.lnbits_payment_hash IS 'LNbits payment hash - unique identifier for Lightning payment';
+COMMENT ON COLUMN contributions.lnbits_payment_request IS 'BOLT11 Lightning invoice string for QR code display';
+COMMENT ON COLUMN contributions.lnbits_checking_id IS 'LNbits checking ID for payment status polling';
+COMMENT ON COLUMN contributions.transaction_id IS 'Payment preimage - cryptographic proof of payment';
 COMMENT ON COLUMN contributions.is_anonymous IS 'Whether the contribution should be displayed anonymously';

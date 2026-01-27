@@ -2,17 +2,25 @@
 
 Base URL: `http://localhost:5000` (development) or your production domain
 
+**Payment Provider**: LNbits (Lightning Network only)
+
 ## Table of Contents
 - [Authentication](#authentication)
 - [Health Check](#health-check)
 - [Campaigns](#campaigns)
 - [Contributions](#contributions)
+- [Invoices & Wallet](#invoices--wallet)
 - [Webhooks](#webhooks)
 - [Error Responses](#error-responses)
 
 ## Authentication
 
-The API uses Bitnob API key authentication for payment operations. Webhook endpoints verify signatures for security.
+The API uses LNbits API keys for payment operations. The backend handles all LNbits communication - **frontend never sees admin keys**.
+
+For protected endpoints, use Bearer token authentication:
+```http
+Authorization: Bearer <your-jwt-token>
+```
 
 ## Health Check
 
@@ -26,7 +34,23 @@ GET /health
 {
   "status": "healthy",
   "service": "CrowdPay API",
-  "version": "1.0.0"
+  "version": "2.0.0",
+  "payment_provider": "LNbits"
+}
+```
+
+### Check Payments Health
+```http
+GET /api/health
+```
+
+**Response** (200 OK)
+```json
+{
+  "status": "healthy",
+  "lnbits_connected": true,
+  "wallet_id": "abc123...",
+  "balance_sats": 100000
 }
 ```
 
@@ -39,6 +63,7 @@ Create a new fundraising campaign.
 ```http
 POST /api/campaigns
 Content-Type: application/json
+Authorization: Bearer <token>
 ```
 
 **Request Body**
@@ -46,8 +71,8 @@ Content-Type: application/json
 {
   "title": "Community Event Fundraiser",
   "description": "Help us organize an amazing community event",
-  "target_amount": 5000.00,
-  "currency": "USD",
+  "target_amount": 1000000,
+  "currency": "SATS",
   "creator_id": "user_123",
   "creator_email": "creator@example.com",
   "end_date": "2025-12-31T23:59:59Z"
@@ -62,31 +87,26 @@ Content-Type: application/json
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "Community Event Fundraiser",
     "description": "Help us organize an amazing community event",
-    "target_amount": 5000.00,
-    "current_amount": 0.00,
-    "currency": "USD",
+    "target_amount": 1000000,
+    "current_amount": 0,
+    "currency": "SATS",
     "creator_id": "user_123",
-    "creator_email": "creator@example.com",
     "status": "active",
-    "end_date": "2025-12-31T23:59:59Z",
-    "created_at": "2025-01-07T10:30:00Z",
-    "updated_at": "2025-01-07T10:30:00Z"
+    "created_at": "2025-01-07T10:30:00Z"
   }
 }
 ```
 
 ### List Campaigns
 
-Get all campaigns with optional filtering.
-
 ```http
-GET /api/campaigns?status=active&creator_id=user_123&limit=10&offset=0
+GET /api/campaigns?status=active&limit=10&offset=0
 ```
 
 **Query Parameters**
 - `status` (optional) - Filter by status: `active`, `completed`, `cancelled`, `expired`
 - `creator_id` (optional) - Filter by creator
-- `limit` (optional) - Number of results per page (default: 50)
+- `limit` (optional) - Results per page (default: 50)
 - `offset` (optional) - Pagination offset (default: 0)
 
 **Response** (200 OK)
@@ -96,10 +116,9 @@ GET /api/campaigns?status=active&creator_id=user_123&limit=10&offset=0
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "title": "Community Event Fundraiser",
-      "target_amount": 5000.00,
-      "current_amount": 2500.00,
-      "status": "active",
-      "created_at": "2025-01-07T10:30:00Z"
+      "target_amount": 1000000,
+      "current_amount": 500000,
+      "status": "active"
     }
   ],
   "count": 1,
@@ -109,8 +128,6 @@ GET /api/campaigns?status=active&creator_id=user_123&limit=10&offset=0
 ```
 
 ### Get Campaign Details
-
-Get detailed information about a specific campaign.
 
 ```http
 GET /api/campaigns/{campaign_id}
@@ -123,16 +140,16 @@ GET /api/campaigns/{campaign_id}
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "title": "Community Event Fundraiser",
     "description": "Help us organize an amazing community event",
-    "target_amount": 5000.00,
-    "current_amount": 2500.00,
-    "currency": "USD",
+    "target_amount": 1000000,
+    "current_amount": 500000,
+    "currency": "SATS",
     "creator_id": "user_123",
     "status": "active",
     "created_at": "2025-01-07T10:30:00Z"
   },
   "statistics": {
     "progress_percentage": 50.0,
-    "remaining_amount": 2500.00,
+    "remaining_amount": 500000,
     "total_contributions": 25,
     "paid_contributions": 20,
     "is_goal_reached": false
@@ -142,11 +159,10 @@ GET /api/campaigns/{campaign_id}
 
 ### Update Campaign
 
-Update campaign details. Only the creator can update their campaign.
-
 ```http
 PUT /api/campaigns/{campaign_id}
 Content-Type: application/json
+Authorization: Bearer <token>
 ```
 
 **Request Body**
@@ -154,86 +170,22 @@ Content-Type: application/json
 {
   "title": "Updated Campaign Title",
   "description": "Updated description",
-  "target_amount": 6000.00,
-  "status": "active"
-}
-```
-
-**Allowed Fields**
-- `title`
-- `description`
-- `target_amount`
-- `status`
-- `end_date`
-
-**Response** (200 OK)
-```json
-{
-  "message": "Campaign updated successfully",
-  "campaign": {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "Updated Campaign Title",
-    "target_amount": 6000.00,
-    "updated_at": "2025-01-07T11:00:00Z"
-  }
+  "target_amount": 1500000
 }
 ```
 
 ### Delete Campaign
 
-Cancel a campaign (soft delete).
-
 ```http
 DELETE /api/campaigns/{campaign_id}
-```
-
-**Response** (200 OK)
-```json
-{
-  "message": "Campaign cancelled successfully"
-}
-```
-
-### Get Campaign Contributions
-
-List all contributions for a specific campaign.
-
-```http
-GET /api/campaigns/{campaign_id}/contributions
-```
-
-**Response** (200 OK)
-```json
-{
-  "contributions": [
-    {
-      "id": "contrib_123",
-      "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
-      "contributor_name": "John Doe",
-      "amount": 100.00,
-      "payment_status": "paid",
-      "message": "Great cause!",
-      "created_at": "2025-01-07T10:45:00Z"
-    },
-    {
-      "id": "contrib_124",
-      "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
-      "contributor_name": "Anonymous",
-      "amount": 50.00,
-      "payment_status": "paid",
-      "is_anonymous": true,
-      "created_at": "2025-01-07T11:00:00Z"
-    }
-  ],
-  "count": 2
-}
+Authorization: Bearer <token>
 ```
 
 ## Contributions
 
 ### Create Contribution
 
-Create a new contribution and generate a payment. For Bitcoin/Lightning (BTC, SATS), generates a Lightning invoice. For fiat currencies (NGN, USD), generates a checkout URL.
+Create a new contribution and generate a Lightning invoice.
 
 ```http
 POST /api/contributions
@@ -246,16 +198,14 @@ Content-Type: application/json
   "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
   "contributor_name": "John Doe",
   "contributor_email": "john@example.com",
-  "amount": 100.00,
-  "currency": "USD",
+  "amount": 10000,
+  "currency": "SATS",
   "message": "Happy to support this cause!",
   "is_anonymous": false
 }
 ```
 
 **Response** (201 Created)
-
-For Bitcoin/Lightning payments:
 ```json
 {
   "message": "Contribution created successfully",
@@ -263,40 +213,19 @@ For Bitcoin/Lightning payments:
     "id": "contrib_123",
     "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
     "contributor_name": "John Doe",
-    "amount": 100.00,
+    "amount": 10000,
     "currency": "SATS",
     "payment_status": "pending",
-    "bitnob_payment_id": "pay_abc123",
-    "bitnob_reference": "contrib_xyz789",
-    "message": "Happy to support this cause!",
     "created_at": "2025-01-07T10:45:00Z"
   },
-  "payment_request": "lnbc1000n1p3..."
+  "payment_request": "lnbc100n1pj...",
+  "payment_hash": "abc123def456..."
 }
 ```
 
-For fiat currency payments:
-```json
-{
-  "message": "Contribution created successfully",
-  "contribution": {
-    "id": "contrib_123",
-    "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
-    "contributor_name": "John Doe",
-    "amount": 5000.00,
-    "currency": "NGN",
-    "payment_status": "pending",
-    "bitnob_payment_id": "checkout_abc123",
-    "bitnob_reference": "contrib_xyz789",
-    "created_at": "2025-01-07T10:45:00Z"
-  },
-  "payment_request": "https://checkout.bitnob.co/pay/abc123"
-}
-```
+The `payment_request` is a BOLT11 Lightning invoice string. Display this as a QR code for the user to scan with their Lightning wallet.
 
 ### Get Contribution Details
-
-Get information about a specific contribution.
 
 ```http
 GET /api/contributions/{contribution_id}
@@ -309,11 +238,11 @@ GET /api/contributions/{contribution_id}
     "id": "contrib_123",
     "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
     "contributor_name": "John Doe",
-    "amount": 100.00,
-    "currency": "USD",
+    "amount": 10000,
+    "currency": "SATS",
     "payment_status": "paid",
     "paid_at": "2025-01-07T10:50:00Z",
-    "transaction_id": "tx_hash_abc",
+    "transaction_id": "preimage_abc123",
     "message": "Happy to support this cause!",
     "created_at": "2025-01-07T10:45:00Z"
   }
@@ -322,7 +251,7 @@ GET /api/contributions/{contribution_id}
 
 ### Check Payment Status
 
-Check the current payment status of a contribution.
+Poll this endpoint to check if payment has been received.
 
 ```http
 GET /api/contributions/{contribution_id}/status
@@ -338,12 +267,18 @@ GET /api/contributions/{contribution_id}/status
 }
 ```
 
-### Cancel Contribution
+**Payment Status Values:**
+- `pending` - Awaiting payment
+- `paid` - Payment confirmed
+- `failed` - Payment failed
+- `expired` - Invoice expired
+- `cancelled` - Contribution cancelled
 
-Cancel a pending contribution.
+### Cancel Contribution
 
 ```http
 POST /api/contributions/{contribution_id}/cancel
+Authorization: Bearer <token>
 ```
 
 **Response** (200 OK)
@@ -355,87 +290,150 @@ POST /api/contributions/{contribution_id}/cancel
 
 ### List Contributions
 
-Get all contributions with optional filtering.
-
 ```http
-GET /api/contributions?campaign_id=550e8400...&payment_status=paid&limit=20&offset=0
+GET /api/contributions?campaign_id=550e8400...&payment_status=paid&limit=20
 ```
 
 **Query Parameters**
 - `campaign_id` (optional) - Filter by campaign
-- `payment_status` (optional) - Filter by status: `pending`, `paid`, `failed`, `expired`, `cancelled`
-- `limit` (optional) - Number of results per page (default: 50)
+- `payment_status` (optional) - Filter by status
+- `limit` (optional) - Results per page (default: 50)
 - `offset` (optional) - Pagination offset (default: 0)
 
-**Response** (200 OK)
-```json
-{
-  "contributions": [
-    {
-      "id": "contrib_123",
-      "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
-      "contributor_name": "John Doe",
-      "amount": 100.00,
-      "payment_status": "paid",
-      "created_at": "2025-01-07T10:45:00Z"
-    }
-  ],
-  "count": 1,
-  "offset": 0,
-  "limit": 20
-}
-```
+## Invoices & Wallet
 
-### Bitnob Webhook
+### Create Standalone Invoice
 
-Webhook endpoint for Bitnob payment notifications. Signature verification required.
+Create a Lightning invoice without a contribution record (for testing).
 
 ```http
-POST /api/contributions/webhook
+POST /api/invoice/create
 Content-Type: application/json
-X-Bitnob-Signature: <signature>
 ```
 
-**Request Body** (from Bitnob)
+**Request Body**
 ```json
 {
-  "event": "charge:success",
-  "data": {
-    "reference": "contrib_xyz789",
-    "status": "success",
-    "paidAt": "2025-01-07T10:50:00Z",
-    "transactionId": "tx_hash_abc",
-    "amount": 100.00,
-    "currency": "NGN"
-  }
+  "amount": 1000,
+  "memo": "Test payment",
+  "expiry": 3600
 }
 ```
 
-**Event Types:**
-- `charge:success` - Payment successful
-- `charge:failed` - Payment failed
-- `charge:pending` - Payment pending
+**Response** (201 Created)
+```json
+{
+  "payment_hash": "abc123...",
+  "payment_request": "lnbc10n1pj...",
+  "amount": 1000,
+  "memo": "Test payment",
+  "expiry": 3600
+}
+```
+
+### Check Invoice Status
+
+```http
+GET /api/invoice/status/{payment_hash}
+```
 
 **Response** (200 OK)
 ```json
 {
-  "message": "Webhook processed successfully"
+  "payment_hash": "abc123...",
+  "paid": true,
+  "status": "paid",
+  "amount": 1000,
+  "preimage": "def456..."
 }
+```
+
+### Decode Invoice
+
+```http
+POST /api/invoice/decode
+Content-Type: application/json
+```
+
+**Request Body**
+```json
+{
+  "bolt11": "lnbc10n1pj..."
+}
+```
+
+**Response** (200 OK)
+```json
+{
+  "payment_hash": "abc123...",
+  "amount_sat": 1000,
+  "description": "Test payment",
+  "expiry": 3600
+}
+```
+
+### Get Wallet Balance
+
+Requires authentication.
+
+```http
+GET /api/wallet/balance
+Authorization: Bearer <token>
+```
+
+**Response** (200 OK)
+```json
+{
+  "balance_sats": 100000,
+  "balance_btc": 0.001,
+  "wallet_id": "abc123..."
+}
+```
+
+### Get Recent Payments
+
+```http
+GET /api/wallet/payments?limit=20
+Authorization: Bearer <token>
 ```
 
 ## Webhooks
 
+### LNbits Webhook
+
+LNbits sends payment notifications to this endpoint when configured.
+
+```http
+POST /api/webhooks/lnbits
+Content-Type: application/json
+```
+
+**Request Body** (from LNbits)
+```json
+{
+  "payment_hash": "abc123...",
+  "payment_request": "lnbc...",
+  "amount": 10000,
+  "memo": "CrowdPay: Campaign Title",
+  "paid": true
+}
+```
+
+**Response** (200 OK)
+```json
+{
+  "message": "Payment processed"
+}
+```
+
 ### Setting Up Webhooks
 
-1. Log into your Bitnob dashboard
-2. Navigate to Settings > Webhooks
-3. Add your webhook URL: `https://yourdomain.com/api/contributions/webhook`
-4. Copy the webhook secret
-5. Add the secret to your `.env` file as `BITNOB_WEBHOOK_SECRET`
-
-### Webhook Security
-
-All webhooks are verified using HMAC-SHA256 signatures. The signature is included in the `X-Bitnob-Signature` header and must match the expected signature for the payload.
+1. Deploy your backend to a public URL
+2. Set `LNBITS_WEBHOOK_URL` in your `.env`:
+   ```
+   LNBITS_WEBHOOK_URL=https://your-backend.com/api/webhooks/lnbits
+   ```
+3. The webhook URL is automatically added when creating invoices
 
 ## Error Responses
 
@@ -443,11 +441,23 @@ All error responses follow this format:
 
 ```json
 {
-  "error": "Error message description"
+  "error": "Error message description",
+  "details": {} // Optional
 }
 ```
 
-For validation errors:
+### HTTP Status Codes
+
+- `200 OK` - Request succeeded
+- `201 Created` - Resource created successfully
+- `400 Bad Request` - Invalid request data or validation error
+- `401 Unauthorized` - Authentication required
+- `404 Not Found` - Resource not found
+- `500 Internal Server Error` - Server error
+
+### Common Errors
+
+**Validation Error**
 ```json
 {
   "error": "Validation error",
@@ -461,52 +471,56 @@ For validation errors:
 }
 ```
 
-### HTTP Status Codes
+**Payment Error**
+```json
+{
+  "error": "Payment processing error",
+  "details": "Insufficient balance in LNbits wallet"
+}
+```
 
-- `200 OK` - Request succeeded
-- `201 Created` - Resource created successfully
-- `400 Bad Request` - Invalid request data or validation error
-- `404 Not Found` - Resource not found
-- `500 Internal Server Error` - Server error
+## Payment Flow
 
-## Payment Statuses
-
-### Contribution Payment Status
-- `pending` - Awaiting payment
-- `paid` - Payment confirmed
-- `failed` - Payment failed
-- `expired` - Payment invoice expired
-- `cancelled` - Contribution cancelled
-
-### Campaign Status
-- `active` - Campaign is active and accepting contributions
-- `completed` - Campaign goal reached or ended successfully
-- `cancelled` - Campaign cancelled by creator
-- `expired` - Campaign end date passed
-
-## Rate Limiting
-
-Currently, no rate limiting is implemented. This will be added in future versions.
+```
+Frontend                    Backend                     LNbits
+   |                           |                           |
+   |  POST /contributions      |                           |
+   |-------------------------->|                           |
+   |                           |  POST /api/v1/payments    |
+   |                           |-------------------------->|
+   |                           |  {payment_request, hash}  |
+   |                           |<--------------------------|
+   |  {payment_request, hash}  |                           |
+   |<--------------------------|                           |
+   |                           |                           |
+   |  [Display QR Code]        |                           |
+   |                           |                           |
+   |  [User pays with wallet]  |                           |
+   |                           |                           |
+   |  GET /status (polling)    |                           |
+   |-------------------------->|  GET /payments/{hash}     |
+   |                           |-------------------------->|
+   |                           |  {paid: true}             |
+   |                           |<--------------------------|
+   |  {is_paid: true}          |                           |
+   |<--------------------------|                           |
+   |                           |                           |
+   |  [Show success]           |  [Update DB, campaign]    |
+```
 
 ## Supported Currencies
 
-- **Bitcoin/Lightning**: BTC, SATS
-- **Fiat**: NGN (Nigerian Naira), USD (US Dollar), and others supported by Bitnob
+**Lightning Network only:**
+- `SATS` - Satoshis (recommended)
+- `BTC` - Bitcoin (converted to SATS internally)
 
-## Payment Methods
+## Rate Limiting
 
-- **Lightning Network**: Instant Bitcoin payments for BTC/SATS
-- **Hosted Checkout**: Card payments and other methods for fiat currencies
-
-## Webhooks
-
-Configure the Bitnob webhook URL in your Bitnob dashboard:
-```
-https://yourdomain.com/api/contributions/webhook
-```
-
-Ensure webhook signature verification is enabled by setting `BITNOB_WEBHOOK_SECRET` in your environment.
+Currently not implemented. Will be added in future versions.
 
 ## Support
 
-For API issues or questions, please refer to the main README.md or open an issue on the repository.
+For API issues:
+- Check the main README.md
+- Review test files for usage examples
+- Open an issue on the repository
