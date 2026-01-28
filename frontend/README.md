@@ -171,6 +171,103 @@ npm run lint     # Run ESLint
 4. Write TypeScript with proper types
 5. Test on both light and dark themes
 
+
+
+
+
+
+|||||||||||||||||
+---
+
+## 🌍 Why CrowdPay?
+
+In Kenya, **M-Pesa** is the lifeblood of daily transactions, but **Bitcoin** is the future of global borderless finance. CrowdPay isn't just a tool; it's a bridge. 
+
+We are building a world where a local merchant in Nairobi can start a fundraiser and receive support from someone in Tokyo or New York instantly, with zero friction.
+
+### ⚡ Project Status: Building the Future
+![GitHub contributors](https://img.shields.io/github/contributors/DadaDevelopers/crowdpay-mvp-crowdpay?style=for-the-badge)
+![GitHub issues](https://img.shields.io/github/issues/DadaDevelopers/crowdpay-mvp-crowdpay?style=for-the-badge)
+![GitHub stars](https://img.shields.io/github/stars/DadaDevelopers/crowdpay-mvp-crowdpay?style=for-the-badge)
+
+- **Current Focus:** Moving from Mock Data to Real-time Backend State.
+- **Next Milestone:** Full M-Pesa STK Push integration via Bitnob.
+- **Vision:** To become the #1 Lightning-enabled crowdfunding platform in Africa.
+
+---
+
+## 🤝 Join the Movement
+
+We believe in the power of open source. Whether you are a Bitcoin maximalist, a frontend wizard, or someone who just wants to help the Kenyan community, there is a place for you here.
+
+1. **Star** this repository to show your support.
+2. **Fork** it and start building.
+3. **Join** our discussions and help us shape the roadmap.
+
+---
+
+### Credits & Acknowledgments
+Built with ❤️ by the **Dada Developers** team. Special thanks to the Lightning Network community and everyone pushing for financial inclusion in Africa.
+
+> *"Fix the Money, Fix the World."* ₿
+
+---
+---
+
+## 🛠 Detailed Feature Breakdown
+
+### 1. Unified Payment Interface (The Bridge)
+CrowdPay's core innovation is the ability to handle two vastly different financial ecosystems in one UI:
+- **Fiat Path (KES):** Integrates with M-Pesa via Bitnob API. When a user pays in KES, the backend triggers an exchange to Bitcoin, ensuring the campaigner receives hard money.
+- **Lightning Path (SATS):** Instant, near-zero-fee transactions. We use **LNbits** and **Blink** to generate BOLT11 invoices. The UI polls the backend every 3 seconds to detect payment confirmation without the user needing to refresh.
+
+### 2. Campaign Governance Modes
+We realized that a "one size fits all" approach doesn't work for fundraising. 
+- **Mode A (Point of Sale):** Designed for physical merchants. The UI simplifies the donation to a "Checkout" experience.
+- **Mode B (Social/Invitational):** Perfect for weddings (Chamas) or parties. It includes "Ticket" logic where a specific amount is required for entry.
+- **Mode C (Anonymous/Activist):** No names, no tracking. Only the transaction hash is recorded, protecting both the donor and the receiver.
+
+---
+
+## 🏗 System Architecture & Data Flow
+
+Understanding how data moves through CrowdPay is crucial for contributors:
+
+1.  **Initiation:** A user creates a campaign. This is stored in **Supabase** in the `campaigns` table.
+2.  **Contribution:** A donor selects a campaign and enters an amount. 
+    - If **Bitcoin** is selected, a request is sent to the `/api/invoice/create` endpoint.
+    - Our backend communicates with **LNbits/Bitnob** to get a `payment_request` (invoice string).
+3.  **Real-time Updates:** 
+    - The frontend enters a "polling state" using a custom React hook.
+    - Once the payment is detected on the blockchain/Lightning network, the `contributions` table in Supabase is updated with `is_paid: true`.
+4.  **Settlement:** The campaign balance is updated using a database trigger, ensuring data integrity.
+
+---
+
+## 💻 Technical Implementation Details
+
+### Environment Variables Required
+To run this project locally, you need to set up a `.env` file with the following keys:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_key
+VITE_API_URL=http://localhost:5000
+VITE_BITNOB_API_KEY=your_bitnob_key
+VITE_LNBITS_WEB_URL=your_lnbits_instance
+📈 Future Roadmap (The "Vision 2026")
+We are moving beyond a simple MVP. Our goals for the next year include:
+NFC Integration: Allow "Tap to Pay" via Bolt Cards for offline Mode A campaigns.
+Multi-Sig Vaults: For large community projects (Chamas), require 3 out of 5 elders to sign a transaction before funds are withdrawn.
+L-USD Support: Stablecoin integration for those who want to avoid Bitcoin's volatility while keeping the funds in the Lightning ecosystem.
+Localized Languages: Adding Swahili support to make the platform accessible to every Kenyan.
+❓ Frequently Asked Questions (FAQ)
+Q: Why Bitcoin for a Kenyan platform?
+A: Bitcoin allows for instant settlement and global reach. M-Pesa is great locally, but Bitcoin connects Kenya to the world's liquidity without high bank fees.
+Q: Is the M-Pesa integration live?
+A: We are currently in the "Sandbox" phase. Real M-Pesa STK Pushes are being tested with a limited group of merchants.
+Q: How do I withdraw my funds?
+A: Once a campaign hits its target or the owner decides to withdraw, they can send the balance to any Lightning Address (e.g., user@getalby.com or user@blink.sv).
+
 ## License
 
 MIT
